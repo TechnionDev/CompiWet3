@@ -18,11 +18,12 @@ class symbolRow {
   symbolRow(string name, int pos, vector<string> types);
   string name;
   int pos;
-  string types;
+  vector<string> types;
 };
 
 class symbolTable {
  public:
+  bool mainExits = false;
   vector<symbolRow> symbolTable;
 };
 
@@ -30,6 +31,18 @@ class program : Node {
  public:
   program();
 };
+
+void m_glob() {
+  symbolTable new_scope;
+  vector < string > print_vec = ["VOID", "STRING"];
+  symbolRow print_our("print", 0, print_vec);
+  vector < string > printi_vec = ["VOID", "INT"];
+  symbolRow printi_our("print", 0, printi_vec);
+  new_scope.symbolTable.push_back(print_our, printi_our)
+  globSymTable.push_back(new_scope);
+  offsetStack.push_back(0);
+  return;
+}
 
 class funcs : Node {
  public:
