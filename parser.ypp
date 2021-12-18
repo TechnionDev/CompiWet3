@@ -1,0 +1,163 @@
+%{
+    #include <iostream>
+    #include <stack>
+    #include "SymbolTable.h"
+    #include "output.hpp"
+    #include "tokenClasses.h"
+    using namespace std;
+    #define YYSTYPE Node*
+    int yylex();
+    extern int yylineno;
+    void yyerror(const char* err);
+%}
+
+%union{
+    Type* type;
+    Op* op;
+    Bool* bool;
+    Cmd* cmd;
+    Parenthesis* paren;
+    Num* num;
+    Id* id;
+    Str* str;
+    Annotation* anno;
+};
+
+%nonassoc <type> VOID;
+%nonassoc <type> INT;
+%nonassoc <type> BYTE;
+%nonassoc <type> B;
+%nonassoc <type> BOOL;
+%nonassoc <anno> CONST;
+%nonassoc <bool> TRUE;
+%nonassoc <bool> FALSE;
+%nonassoc <cmd> RETURN;
+%nonassoc <cmd> WHILE;
+%nonassoc <cmd> BREAK;
+%nonassoc <cmd> CONTINUE;
+%nonassoc <cmd> SC;
+%nonassoc <cmd> COMMA;
+%nonassoc <paren> LBRACE;
+%nonassoc <paren> RBRACE;
+%nonassoc <name> ID;
+%nonassoc <num>  NUM;
+%nonassoc <str> STRING;
+%left <paren> LPAREN;
+%left <paren> RPAREN;
+%right <op> NOT;
+%left  <op> MULT;
+%left  <op> DIV;
+%left  <op> PLUS;
+%left  <op> MINUS;
+%nonassoc <op> RELOPNONASSOC;
+%left <op> RELOPLEFT;
+%left <op> AND;
+%left <op> OR;
+%right <cmd> IF;
+%right <cmd> ELSE;
+%right <cmd> ASSIGN;
+
+%type <type_value> exp
+%%
+program: funcs{tables.pop();
+               offsets.pop();};
+
+funcs: /*epsilon*/{symtbl st = maketable(null);
+                    tables.push(st);
+                    offsets.push(0);};|
+        funcDecl funcs {output::printProductionRule(3);};
+
+funcDecl: retType ID LPAREN formals RPAREN LBRACE statements RBRACE{output::printProductionRule(4);};
+
+retType: type{output::printProductionRule(5);};
+        |VOID{output::printProductionRule(6);};
+
+formals: /*epsilon*/{output::printProductionRule(7);};
+	|formalsList{output::printProductionRule(8);};
+
+formalsList: formalDecl{output::printProductionRule(9);};
+	|formalDecl COMMA formalsList{output::printProductionRule(10);};
+
+formalDecl: typeAnnotation type ID{output::printProductionRule(11);};//TODO: maybe there is a problem with typeAnnotation?
+
+statements: statement{output::printProductionRule(12);}
+	|statements statement{output::printProductionRule(13);};
+
+
+statement: OpenStatement
+	|ClosedStatement;
+
+OpenStatement: IF LPAREN exp RPAREN statement{output::printProductionRule(21);}
+		|IF LPAREN exp RPAREN ClosedStatement ELSE OpenStatement{}
+		|WHILE LPAREN exp RPAREN OpenStatement{output::printProductionRule(23);};
+ClosedStatement:SimpleStatement
+		|IF LPAREN exp RPAREN ClosedStatement ELSE ClosedStatement{output::printProductionRule(22);}
+		|WHILE LPAREN exp RPAREN ClosedStatement;
+
+SimpleStatement: LBRACE statements RBRACE{output::printProductionRule(14);}
+	|typeAnnotation type ID SC{output::printProductionRule(15);}
+	|typeAnnotation type ID ASSIGN exp SC{output::printProductionRule(16);}
+	|ID ASSIGN exp SC{output::printProductionRule(17);}
+	|call SC{output::printProductionRule(18);}
+	|RETURN SC{output::printProductionRule(19);}
+	|RETURN exp SC{output::printProductionRule(20);}
+	|BREAK SC{output::printProductionRule(24);}
+	|CONTINUE SC{output::printProductionRule(25);};
+
+call: ID LPAREN expList RPAREN{output::printProductionRule(26);};
+	|ID LPAREN RPAREN{output::printProductionRule(27);};
+
+expList: exp{output::printProductionRule(28);};
+	|exp COMMA expList{output::printProductionRule(29);};
+
+type: INT{output::printProductionRule(30);};
+	|BYTE{output::printProductionRule(31);};
+	|BOOL{output::printProductionRule(32);};
+
+typeAnnotation: /*epsilon*/{output::printProductionRule(33);};
+		|CONST{output::printProductionRule(34);};
+
+
+exp: LPAREN exp RPAREN{output::printProductionRule(35);};
+	|exp MULT exp{output::printProductionRule(36);};
+	|exp DIV exp{output::printProductionRule(36);};
+	|exp PLUS exp{output::printProductionRule(36);};
+	|exp MINUS exp{output::printProductionRule(36);};
+	|ID{output::printProductionRule(37);};
+	|call{$$ = $1;
+          $$.type = $1.type;};
+	|NUM{$$ = $1;
+	     $$.type = $1.type;};
+	|NUM B{$$ = $1;
+	       $$.type = "byte";};
+	|STRING{$$ = $1;
+            $$.type = "string";};
+	|TRUE{$$ = $1;
+          $$.type = "bool";};
+	|FALSE{$$ = $1;
+           $$.type = "bool";};
+	|NOT exp{output::printProductionRule(44);};
+	|exp AND exp{output::printProductionRule(45);};
+	|exp OR exp{output::printProductionRule(46);};
+	|exp RELOPNONASSOC exp{output::printProductionRule(47);};
+	|exp RELOPLEFT exp{output::printProductionRule(47);};
+	|LPAREN typeAnnotation type RPAREN exp{output::printProductionRule(48);};
+
+
+%%
+
+void yyerror (const char* err) {
+    output::errorSyn(yylineno);
+    exit(0);
+}
+int main() {
+    SymbolTable tables = SymbolTable();
+    std::stack<int> offsets = std::stack<int>();
+    int res = yyparse();
+    if(res != 0){
+        if(!tables.isMainExist()){
+            hw3_output::errorMainMissing();
+        }
+    }
+    return res;
+}
