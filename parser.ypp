@@ -1,0 +1,145 @@
+%{
+    #include <iostream>
+    #include "hw3_output.hpp"
+    #include "Semantics.h"
+    #include "TokensClasses.h"
+    using namespace std;
+    #define YYSTYPE int
+    int yylex();
+    extern int yylineno;
+    void yyerror(const char* err);
+
+%}
+
+%union{
+    Type* type;
+    Op* op;
+    Bool* bool;
+    Cmd* cmd;
+    Parenthesis* paren;
+    Num* num;
+    Id* id;
+    Str* str;
+    Annotation* anno;
+};
+
+%nonassoc <type> VOID;
+%nonassoc <type> INT;
+%nonassoc <type> BYTE;
+%nonassoc <type> B;
+%nonassoc <type> BOOL;
+%nonassoc <anno> CONST;
+%nonassoc <bool> TRUE;
+%nonassoc <bool> FALSE;
+%nonassoc <cmd> RETURN;
+%nonassoc <cmd> WHILE;
+%nonassoc <cmd> BREAK;
+%nonassoc <cmd> CONTINUE;
+%nonassoc <cmd> SC;
+%nonassoc <cmd> COMMA;
+%nonassoc <paren> LBRACE;
+%nonassoc <paren> RBRACE;
+%nonassoc <id> ID;
+%nonassoc <num>  NUM;
+%nonassoc <str> STRING;
+%left <paren> LPAREN;
+%left <paren> RPAREN;
+%right <op> NOT;
+%left  <op> MULT;
+%left  <op> DIV;
+%left  <op> PLUS;
+%left  <op> MINUS;
+%nonassoc <op> RELOPNONASSOC;
+%left <op> RELOPLEFT;
+%left <op> AND;
+%left <op> OR;
+%right <cmd> IF;
+%right <cmd> ELSE;
+%right <cmd> ASSIGN;
+
+%%
+program: m_glob funcs {$$ = program();};
+
+funcs: /*epsilon*/{$$ = funcs()};|
+        funcDecl funcs {$$ = funcs();};
+
+funcDecl: retType ID LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
+
+retType: type{$$ = retType($1);};
+        |VOID{$$ = retType($1.type);};
+
+formals: /*epsilon*/{$$ = formals();};
+	|formalsList{$$ = formals($1);};
+
+formalsList: formalDecl{$$ = formalsList($1);};
+	|formalDecl COMMA formalsList{$$ = formalsList($1, $3);};
+
+formalDecl: typeAnnotation type ID{$$ = formalDecl($1,$2,id.IdStr);};
+
+statements: statement{$$ = statements($1);}
+	|statements statement{$$ = statements($1, $2);};
+
+statement: OpenStatement {$$ = statement($1);}
+	|ClosedStatement {$$ = statement($1);};
+
+OpenStatement: IF LPAREN exp RPAREN statement{$$ = OpenStatement($1.keyWord, $3, $5);}
+		|IF LPAREN exp RPAREN ClosedStatement ELSE OpenStatement{$$ = OpenStatement($1.keyWord, $3, $5, $7);}
+		|WHILE LPAREN exp RPAREN OpenStatement{$$ = OpenStatement($1.keyWord, $3, $5);};
+
+ClosedStatement:SimpleStatement {$$ = ClosedStatement($1);}
+		|IF LPAREN exp RPAREN ClosedStatement ELSE ClosedStatement{$$ = ClosedStatement($1.keyWord,$3, $5, $7);}
+		|WHILE LPAREN exp RPAREN ClosedStatement{$$ = ClosedStatement($1.keyWord, $3, $5);};
+
+SimpleStatement: LBRACE statements RBRACE{$$ =SimpleStatement($2);}
+	|typeAnnotation type ID SC{$$ = SimpleStatement($1,$2,$3.IdStr);}
+	|typeAnnotation type ID ASSIGN exp SC{$$ = SimpleStatement($1,$2,$3.IdStr,$5);}
+	|ID ASSIGN exp SC{$$ = SimpleStatement($1.IdStr ,$2);}
+	|call SC{$$ = SimpleStatement($1);}
+	|RETURN SC{$$ = SimpleStatement($1.keyWord);}
+	|RETURN exp SC{$$ = SimpleStatement($2);}
+	|BREAK SC{$$ = SimpleStatement($1.keyWord);}
+	|CONTINUE SC{$$ = SimpleStatement($1.keyWord);};
+
+call: ID LPAREN expList RPAREN{$$ = call($1.IdStr,$3);};
+	|ID LPAREN RPAREN{$$ = call($1.IdStr);};
+
+expList: exp{$$ = expList($1);};
+	|exp COMMA expList{$$ = expList($1,$3);};
+
+type: INT{$$ = type($1.type);};
+	|BYTE{$$ = type($1.type);};
+	|BOOL{$$ = type($1.type);};
+
+typeAnnotation: /*epsilon*/{$$ = typeAnnotation();};
+		|CONST{$$ = typeAnnotation($1.annoType);};
+
+
+exp: LPAREN exp RPAREN{$$ = exp($2);};
+	|exp MULT exp{$$ = exp($1, $2.op, $3);};
+	|exp DIV exp{$$ = exp($1, $2.op, $3);};
+	|exp PLUS exp{$$ = exp($1, $2.op, $3);};
+	|exp MINUS exp{$$ = exp($1, $2.op, $3);};
+	|ID{$$ = exp($1.IdStr);};
+	|call{$$ = exp($1);};
+	|NUM{$$ = exp($1.val);};
+	|NUM B{$$ = exp($1.val, true);};
+	|STRING{$$ = exp($1.str);};
+	|TRUE{$$ = exp($1.val);};
+	|FALSE{$$ = exp($1.val);};
+	|NOT exp{$$ = exp($1.op, $2);};
+	|exp AND exp{$$ = exp($1, $2.op, $3);};
+	|exp OR exp{$$ = exp($1, $2.op, $3);};
+	|exp RELOPNONASSOC exp{$$ = exp($1, $2.op, $3);};
+	|exp RELOPLEFT exp{$$ = exp($1, $2.op, $3);};
+	|LPAREN typeAnnotation type RPAREN exp{$$ = exp($2, $3, $5);};
+
+m_glob:     {m_glob();};
+%%
+
+void yyerror (const char* err) {
+    output::errorSyn(yylineno);
+    exit(0);
+}
+int main() {
+    return yyparse();
+}
