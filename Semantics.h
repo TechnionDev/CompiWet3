@@ -2,8 +2,17 @@
 #define COMPIWET3__SEMANTICS_H_
 
 #include "hw3_output.hpp"
+#include "SymbolTable.h"
 using namespace std;
 class Node;
+class symbolTable;
+class statement;
+class OpenStatement;
+class statements;
+class call;
+
+vector<symbolTable> globSymTable;
+vector<int> offsetStack;
 
 #define YYSTYPE Node*
 
@@ -15,16 +24,19 @@ class Node {
 };
 
 class symbolRow {
-  symbolRow(string name, int pos, vector<string> types);
-  string name;
-  int pos;
-  vector<string> types;
+    string name;
+    int pos;
+    vector<string> types;
+public:
+    symbolRow(string name, int pos, vector<string> types);
+    bool operator==(symbolRow &other);
 };
 
 class symbolTable {
  public:
   bool mainExits = false;
   vector<symbolRow> symbolTable;
+  bool contains(string id, vector<string> type);
 };
 
 class program : Node {
@@ -34,113 +46,43 @@ class program : Node {
 
 void m_glob() {
   symbolTable new_scope;
-  vector < string > print_vec = ["VOID", "STRING"];
+  vector < string > print_vec = {"VOID", "STRING"};
   symbolRow print_our("print", 0, print_vec);
-  vector < string > printi_vec = ["VOID", "INT"];
+  vector < string > printi_vec = {"VOID", "INT"};
   symbolRow printi_our("print", 0, printi_vec);
-  new_scope.symbolTable.push_back(print_our, printi_our)
-  globSymTable.push_back(new_scope);
+  new_scope.symbolTable.push_back(print_our);
+  new_scope.symbolTable.push_back(printi_our);
   offsetStack.push_back(0);
+  globSymTable.push_back(new_scope);
   return;
 }
 
-class funcs : Node {
- public:
-  funcs();
-};
+void  m_newScope(){
 
-class funcsDecl : Node {
- public:
-  funcsDecl(retType &type, string id, formals &formals, statements &statements);
-};
+    //Create and insert new scope table
+    symbolTable new_scope;
+    globSymTable.push_back(new_scope);
 
-class retType : Node {
- public:
-  retType(type &type);
-};
-
-class formals : Node {
- public:
-  formals();
-  formals(formalsList &formalsList);
-};
-
-class formalsList : Node {
- public:
-  formalsList(formalsDecl &formalsDecl);
-  formalsList(formalsDecl &formalsDecl, formalsList &formalsList);
-};
-
-class formalsDecl : Node {
- public:
-  formalsDecl(typeAnnotation &typeAnnotation, type &type, strint id);
-};
-
-class statements : Node {
- public:
-  statements(statement &statement);
-  statements(statements &statements, statement &statement);
-};
-
-class statement : Node {
- public:
-  statement(OpenStatement &OpenStatement);
-  statement(ClosedStatement &ClosedStatement);
-};
-
-class OpenStatement : Node {
- public:
-  OpenStatement(string keyWord, exp &exp, statement &statement);
-  OpenStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement, OpenStatement &OpenStatement);
-  OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement);
-};
-
-class ClosedStatement : Node {
- public:
-  ClosedStatement(SimpleStatement &SimpleStatement);
-  ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement, OpenStatement &OpenStatement);
-  ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement);
-};
-
-class SimpleStatement : Node {
- public:
-  SimpleStatement(string cmd); //return, break, continue
-  SimpleStatement(statements &statements);
-  SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id);
-  SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp);
-  SimpleStatement(string id, exp &exp);
-  SimpleStatement(call &call);
-  SimpleStatement(exp &exp);
-
-};
-
-class call : Node {
- public:
-  call(string id, expList &expList);
-  call(string id);
-};
-
-class expList : Node {
- public:
-  expList(exp &exp);
-  expList(exp &exp, expList &expList);
-};
+    //Copy the last offset and insert as new offset on top of the stack
+    offsetStack.push_back(*offsetStack.end());
+}
 
 class type : Node {
  public:
-  type(string type);
+    string typeName;
+    type(string typeName);
 };
 
 class typeAnnotation : Node {
  public:
-  typeAnnotation();
-  typeAnnotation(string annoType);
+    string annoType;
+    typeAnnotation(string annoType = "");
 };
 
 class exp : Node {
  public:
   exp(exp &exp);
-  exp(exp &exp, string op, exp &exp);
+  exp(exp &firstExp, string op, exp &secExp);
   exp(string id);
   exp(call &call);
   exp(int val, bool isB = false);
@@ -149,4 +91,87 @@ class exp : Node {
   exp(typeAnnotation &typeAnnotation, type &type, exp &exp);
 };
 
+class expList : Node {
+public:
+    expList(exp &exp);
+    expList(exp &exp, expList &expList);
+};
+
+class call : Node {
+public:
+    call(string id, expList &expList);
+    call(string id);
+};
+
+class SimpleStatement : Node {
+public:
+    SimpleStatement(string cmd); //return, break, continue
+    SimpleStatement(statements &statements);
+    SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id);
+    SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp);
+    SimpleStatement(string id, exp &exp);
+    SimpleStatement(call &call);
+    SimpleStatement(exp &exp);
+
+};
+
+class ClosedStatement : Node {
+public:
+    ClosedStatement(SimpleStatement &SimpleStatement);
+    ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement, OpenStatement &OpenStatement);
+    ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement);
+};
+
+class OpenStatement : Node {
+public:
+    OpenStatement(string keyWord, exp &exp, statement &statement);
+    OpenStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement, OpenStatement &OpenStatement);
+    OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement);
+};
+
+class statement : Node {
+public:
+    statement(OpenStatement &OpenStatement);
+    statement(ClosedStatement &ClosedStatement);
+};
+
+class statements : Node {
+public:
+    statements(statement &statement);
+    statements(statements &statements, statement &statement);
+};
+
+class formalsDecl : Node {
+public:
+    formalsDecl(typeAnnotation &typeAnnotation, type &type, string id);
+};
+
+class formalsList : Node {
+public:
+    formalsList(formalsDecl &formalsDecl);
+    formalsList(formalsDecl &formalsDecl, formalsList &formalsList);
+};
+
+class formals : Node {
+public:
+    formals();
+    formals(formalsList &formalsList);
+};
+
+class retType : Node {
+public:
+    string typeName;
+    retType(type &type);
+    retType(string typeName);
+};
+
+class funcsDecl : Node {
+public:
+    funcsDecl(retType &type, string id, formals &formals, statements &statements);
+};
+
+class funcs : Node {
+public:
+    funcs();
+};
 #endif //COMPIWET3__SEMANTICS_H_
