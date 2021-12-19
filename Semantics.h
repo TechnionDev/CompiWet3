@@ -29,12 +29,14 @@ class symbolRow {
     vector<string> types;
 public:
     symbolRow(string name, int pos, vector<string> types);
+    bool operator==(symbolRow &other);
 };
 
 class symbolTable {
  public:
   bool mainExits = false;
   vector<symbolRow> symbolTable;
+  bool contains(string id, vector<string> type);
 };
 
 class program : Node {
@@ -60,7 +62,7 @@ void  m_newScope(){
     //Create and insert new scope table
     symbolTable new_scope;
     globSymTable.push_back(new_scope);
-    
+
     //Copy the last offset and insert as new offset on top of the stack
     offsetStack.push_back(*offsetStack.end());
 }
@@ -158,7 +160,9 @@ public:
 
 class retType : Node {
 public:
+    string typeName;
     retType(type &type);
+    retType(string typeName);
 };
 
 class funcsDecl : Node {

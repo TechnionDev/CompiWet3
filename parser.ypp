@@ -64,7 +64,7 @@ funcs: /*epsilon*/{$$ = funcs()};|
 
 funcDecl: retType ID LPAREN formals RPAREN m_newScope LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
 
-m_newScope: /*epsilon*/ {Semantics::m_newScope();}
+m_newScope: /*epsilon*/ {Semantics::m_newScope();};
 
 retType: type{$$ = retType($1);};
         |VOID{$$ = retType($1.type);};
@@ -91,7 +91,7 @@ ClosedStatement:SimpleStatement {$$ = ClosedStatement($1);}
 		|IF LPAREN exp RPAREN ClosedStatement ELSE ClosedStatement{$$ = ClosedStatement($1.keyWord,$3, $5, $7);}
 		|WHILE LPAREN exp RPAREN ClosedStatement{$$ = ClosedStatement($1.keyWord, $3, $5);};
 
-SimpleStatement: LBRACE statements RBRACE{$$ =SimpleStatement($2);}
+SimpleStatement: LBRACE statements RBRACE{$$ =SimpleStatement($2);} //TODO - Maybe we need to perform the m_nesScope() function here
 	|typeAnnotation type ID SC{$$ = SimpleStatement($1,$2,$3.IdStr);}
 	|typeAnnotation type ID ASSIGN exp SC{$$ = SimpleStatement($1,$2,$3.IdStr,$5);}
 	|ID ASSIGN exp SC{$$ = SimpleStatement($1.IdStr ,$2);}
