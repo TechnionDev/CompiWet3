@@ -5,6 +5,13 @@
 #include "SymbolTable.h"
 using namespace std;
 class Node;
+class program;
+class funcs;
+class funcsDecl;
+class retType;
+class formals;
+class formalsList;
+class formalsDecl;
 class symbolTable;
 class statement;
 class OpenStatement;
@@ -14,6 +21,7 @@ class call;
 vector<symbolTable> globSymTable;
 vector<int> offsetStack;
 bool mainExits = false;
+string currentFunctionScope;
 #define YYSTYPE Node*
 
 class Node {
@@ -28,7 +36,14 @@ class symbolRow {
 	int pos;
 	vector<string> types;
 	bool is_const;
-	symbolRow(string name, int pos, vector<string> types, bool is_const);
+	vector<bool> constFormals;
+	bool isFunc = false;
+	symbolRow(string name,
+			  int pos,
+			  vector<string> types,
+			  bool is_const,
+			  vector<bool> constFormals,
+			  bool isFunc = false);
 	bool operator==(symbolRow &other);
 };
 
@@ -58,7 +73,8 @@ class funcs : Node {
 
 class funcsDecl : Node {
   public:
-	funcsDecl(retType &type, string id, formals &formals, statements &statements);
+
+	funcsDecl(retType &retType, string id, formals &formals, statements &statements);
 };
 
 class retType : Node {
@@ -70,18 +86,23 @@ class retType : Node {
 
 class formals : Node {
   public:
+	vector<formalsDecl> formalsList;
 	formals();
 	formals(formalsList &formalsList);
 };
 
 class formalsList : Node {
   public:
+	vector<formalsDecl> formalsList;
 	formalsList(formalsDecl &formalsDecl);
 	formalsList(formalsDecl &formalsDecl, formalsList &formalsList);
 };
 
 class formalsDecl : Node {
   public:
+	string type;
+	bool isConst;
+	string id;
 	formalsDecl(typeAnnotation &typeAnnotation, type &type, string id);
 };
 

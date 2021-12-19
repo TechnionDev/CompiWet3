@@ -64,7 +64,7 @@ program: m_glob funcs {$$ = program();};
 funcs: /*epsilon*/{$$ = funcs()};|
         funcDecl funcs {$$ = funcs();};
 
-funcDecl: retType ID LPAREN formals RPAREN m_newScope LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
+funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
 
 retType: type{$$ = retType($1);};
         |VOID{$$ = retType($1.type);};

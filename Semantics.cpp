@@ -1,18 +1,25 @@
 #include "Semantics.h"
 #include "hw3_output.hpp"
 
-symbolRow::symbolRow(string name, int pos, vector<string> types, bool is_const)
+symbolRow::symbolRow(string name,
+					 int pos,
+					 vector<string> types,
+					 bool is_const,
+					 vector<bool> constFormals,
+					 bool isFunc = false)
 	: name(name),
 	  pos(pos),
 	  types(types),
-	  is_const(is_const) {}
+	  is_const(is_const),
+	  constFormals(constFormals),
+	  isFunc(isFunc) {}
 
 bool symbolRow::operator==(symbolRow &other) {
 	return (this->name == other.name);// && (this->types == other.types);
 }
 
 bool symbolTable::contains(string id, vector<string> type) {
-	symbolRow dummy(id, -1, type);
+	symbolRow dummy(id, -1, type, dummyConst, {});
 	bool res = false;
 	vector<symbolRow>::iterator it = this->symbolTable.begin();
 	for (it; it != this->symbolTable.end(); it++) {
@@ -27,9 +34,9 @@ bool symbolTable::contains(string id, vector<string> type) {
 void m_glob() {
 	symbolTable new_scope;
 	vector < string > print_vec = ["VOID", "STRING"];
-	symbolRow print_our("print", 0, print_vec, false);
+	symbolRow print_our("print", 0, print_vec, false, {});
 	vector < string > printi_vec = ["VOID", "INT"];
-	symbolRow printi_our("printi", 0, printi_vec, false);
+	symbolRow printi_our("printi", 0, printi_vec, false, {});
 	new_scope.symbolTable.push_back(print_our, printi_our)
 	globSymTable.push_back(new_scope);
 	offsetStack.push_back(0);
@@ -62,12 +69,15 @@ void end_scope() {
 	}
 }
 
+bool findIdentifier(string id) {
+
+}
 //////////////////////////////////////////////////
 
 program::program() : Node("program") {
 	void end_scope();
 	if (!mainExits) {
-		errorMainMissing();
+		output::errorMainMissing();
 	}
 }
 
@@ -75,8 +85,52 @@ funcs::funcs() : Node("funcs") {
 	//nothing?
 }
 
-funcsDecl::funcsDecl(retType &type, string id, formals &formals, statements &statements) : Node("funcsDecl") {
+funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &statements) : Node("funcsDecl") {
+	if (id == "main") {
+		if (mainExits) {
+			output::errorDef(lineno, id);
+			exit(0);
+		}
+		mainExits = true;
+	}
+	if (findIdentifier(id)) {
+		output::errorDef(lineno, id);
+		exit(0);
+	}
 
+	vector<string> funcTypes;
+	vector<bool> funcConstTypes;
+	funcTypes.push_back(retType);
+	for (auto formal: formals.formalsList) {
+		funcTypes.push_back(formal.type);
+		funcConstTypes.push_back(formal.isConst);
+	}
+	currentFunctionScope = id;
+	symbolRow symbol_row(id, 0, funcTypes, false, funcConstTypes, true);
+	globSymTable.end()->symbolTable.push_back(symbol_row);
+}
+
+retType::retType(type &type) {
+
+}
+retType::retType(string typeName) {
+
+}
+formals::formals() {
+
+}
+formals::formals(formalsList &formals) {
+	for (auto formal: formals.formalsList) {
+		for (auto nextFormal: formals.formalsList) {
+			if (formal == nextFormal) {
+				continue;
+			}
+			if (formal.id == nextFormal.id) {
+				output::errorDef(lineno, id);
+				exit(0);
+			}
+		}
+	}
 }
 type::type(string typeName) {
 	if (typeName == "INT") {
