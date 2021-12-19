@@ -62,7 +62,9 @@ program: m_glob funcs {$$ = program();};
 funcs: /*epsilon*/{$$ = funcs()};|
         funcDecl funcs {$$ = funcs();};
 
-funcDecl: retType ID LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
+funcDecl: retType ID LPAREN formals RPAREN m_newScope LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
+
+m_newScope: /*epsilon*/ {Semantics::m_newScope();}
 
 retType: type{$$ = retType($1);};
         |VOID{$$ = retType($1.type);};
@@ -132,7 +134,7 @@ exp: LPAREN exp RPAREN{$$ = exp($2);};
 	|exp RELOPLEFT exp{$$ = exp($1, $2.op, $3);};
 	|LPAREN typeAnnotation type RPAREN exp{$$ = exp($2, $3, $5);};
 
-m_glob:     {m_glob();};
+m_glob:     {Semantics::m_glob();};
 %%
 
 void yyerror (const char* err) {

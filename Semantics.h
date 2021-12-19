@@ -55,6 +55,16 @@ void m_glob() {
   return;
 }
 
+void  m_newScope(){
+
+    //Create and insert new scope table
+    symbolTable new_scope;
+    globSymTable.push_back(new_scope);
+    
+    //Copy the last offset and insert as new offset on top of the stack
+    offsetStack.push_back(*offsetStack.end());
+}
+
 class type : Node {
  public:
     string typeName;
