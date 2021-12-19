@@ -21,7 +21,9 @@
     Id* id;
     Str* str;
     Annotation* anno;
+    program program;
 };
+%type<program> program
 
 %nonassoc <type> VOID;
 %nonassoc <type> INT;
