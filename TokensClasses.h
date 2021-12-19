@@ -27,11 +27,7 @@ class Bool : public Node {
   bool val;
  public:
   Bool(string boolType) {
-	if (boolType == 'true') {
-	  val = true;
-	} else {
-	  val = false;
-	}
+      val = boolType == "true";
   }
 };
 
@@ -48,9 +44,9 @@ class Parenthesis : public Node {
 };
 
 class Annotation : public Node {
-  stirng annoType;
  public:
-  Annotation(stirng annoType) : annoType(annoType) {}
+    string annoType;
+    Annotation(string annoType) : annoType(annoType) {}
 };
 
 class Num : public Node {

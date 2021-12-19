@@ -4,7 +4,7 @@
 
 #include "SymbolTable.h"
 
-//TODO: implement this function
+//TODO: implement this function to avoid shadowing
 bool SymbolTable::isExist(Symbol *symbol) {
     bool isFound = false;
     return false;

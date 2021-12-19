@@ -136,7 +136,7 @@ m_glob:     {m_glob();};
 %%
 
 void yyerror (const char* err) {
-    output::errorSyn(yylineno);
+    hw3_output::errorSyn(yylineno);
     exit(0);
 }
 int main() {

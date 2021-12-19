@@ -4,9 +4,9 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/SymbolTable.cpp" "/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/cmake-build-debug/CMakeFiles/CompiWet3.dir/SymbolTable.cpp.o"
-  "/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/hw3_output.cpp" "/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/cmake-build-debug/CMakeFiles/CompiWet3.dir/hw3_output.cpp.o"
-  "/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/main.cpp" "/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/cmake-build-debug/CMakeFiles/CompiWet3.dir/main.cpp.o"
+  "D:/Study/Compilation/HW/HW3/CompiWet3/Semantics.cpp" "D:/Study/Compilation/HW/HW3/CompiWet3/cmake-build-debug/CMakeFiles/CompiWet3.dir/Semantics.cpp.obj"
+  "D:/Study/Compilation/HW/HW3/CompiWet3/hw3_output.cpp" "D:/Study/Compilation/HW/HW3/CompiWet3/cmake-build-debug/CMakeFiles/CompiWet3.dir/hw3_output.cpp.obj"
+  "D:/Study/Compilation/HW/HW3/CompiWet3/main.cpp" "D:/Study/Compilation/HW/HW3/CompiWet3/cmake-build-debug/CMakeFiles/CompiWet3.dir/main.cpp.obj"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 
