@@ -5,6 +5,7 @@
 #include "SymbolTable.h"
 using namespace std;
 class Node;
+class symbolTable;
 class program;
 class funcs;
 class funcsDecl;
@@ -12,11 +13,16 @@ class retType;
 class formals;
 class formalsList;
 class formalsDecl;
-class symbolTable;
+class statements;
 class statement;
 class OpenStatement;
-class statements;
+class ClosedStatement;
+class SimpleStatement;
 class call;
+class expList;
+class type;
+class typeAnnotation;
+class exp;
 
 vector<symbolTable> globSymTable;
 vector<int> offsetStack;
@@ -73,7 +79,6 @@ class funcs : Node {
 
 class funcsDecl : Node {
   public:
-
 	funcsDecl(retType &retType, string id, formals &formals, statements &statements);
 };
 

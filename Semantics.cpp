@@ -100,7 +100,7 @@ funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &
 
 	vector<string> funcTypes;
 	vector<bool> funcConstTypes;
-	funcTypes.push_back(retType);
+	funcTypes.push_back(retType.typeName);
 	for (auto formal: formals.formalsList) {
 		funcTypes.push_back(formal.type);
 		funcConstTypes.push_back(formal.isConst);
@@ -110,16 +110,23 @@ funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &
 	globSymTable.end()->symbolTable.push_back(symbol_row);
 }
 
-retType::retType(type &type) {
-
+retType::retType(type &type) : Node("retType") {
+	this->typeName = type;
 }
-retType::retType(string typeName) {
 
+retType::retType(string typeName) : Node("retType") {
+	if (typeName != "VOID") {
+		void errorSyn(int lineno);
+		exit(0);
+	}
+	this.typeName = typeName;
 }
-formals::formals() {
 
+formals::formals() : Node("formals") {
+	this->formalsList = {};
 }
-formals::formals(formalsList &formals) {
+
+formals::formals(formalsList &formals) : Node("formals") {
 	for (auto formal: formals.formalsList) {
 		for (auto nextFormal: formals.formalsList) {
 			if (formal == nextFormal) {
@@ -131,7 +138,38 @@ formals::formals(formalsList &formals) {
 			}
 		}
 	}
+	i = -1;
+	for (auto it: formals.formalsList) {
+		symbolRow formal(it.id, i, {it.type}, true, {}, false);
+		globSymTable.end()->symbolTable.push_back(formal);
+		i--;
+	}
+	this->formalsList = formals;
 }
+
+formalsList::formalsList(formalsDecl &formalsDecl) : Node("formalsList") {
+	this->formalsList.push_back(formalsList);
+}
+
+formalsList::formalsList(formalsDecl &formalsDecl, formalsList &formalsList) : Node("formalsList") {
+	this->formalsList.push_back(formalsDecl);
+	this->formalsList.insert(this->formalsList.end(), formalsList.formalsList.begin(), formalsList.formalsList.end());
+}
+
+formalsDecl::formalsDecl(typeAnnotation &typeAnnotation, type &type, string id) : Node("formalsDecl") {
+	this->id = id;
+	this->type = type;
+	this->isConst = typeAnnotation;
+}
+
+statements::statements(statement &statement) {
+
+}
+
+statements::statements(statements &statements, statement &statement) {
+
+}
+
 type::type(string typeName) {
 	if (typeName == "INT") {
 		typeName = "INT";
@@ -207,38 +245,4 @@ SimpleStatement::SimpleStatement(string id, exp &exp) {
 
 }
 
-retType::retType(type &type) : typeName(type.typeName) {}
-
-retType::retType(string typeName) : typeName(typeName) {}
-
-formalsDecl::formalsDecl(typeAnnotation &typeAnnotation, type &type, string id) {
-	//TODO - firs need to check if the id already exist, and than insert it
-	//Check existence to prevent shadowing
-	bool alreadyExist = false;
-	vector<symbolTable>::iterator it = globSymTable.end();
-	for (it; it != globSymTable.begin(); it--) {
-		alreadyExist = it->contains(id, {type.typeName});
-		if (alreadyExist) {
-			break;
-		}
-	}
-	if (!alreadyExist) { //Case the variable not already exist
-		if (typeAnnotation.annoType.empty()) {
-			//Create an insert new symbolRow:
-			vector<string> type_vec = {type.typeName};
-			symbolRow new_var(id, *offsetStack.end(), type_vec);
-			globSymTable.end()->symbolTable.push_back(new_var);
-
-			//Increasing the current offset by 1:
-			int new_offset = *offsetStack.end();
-			offsetStack.pop_back();
-			offsetStack.push_back(new_offset);
-		} else {
-			//In case of const this rule is illegal
-			//TODO: print desired error in case of const
-		}
-	} else {
-		hw3_output::errorDef(yylino, id);
-	}
-}
 
