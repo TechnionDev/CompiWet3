@@ -27,7 +27,6 @@ class exp;
 vector<symbolTable> globSymTable;
 vector<int> offsetStack;
 bool mainExits = false;
-string currentFunctionScope;
 #define YYSTYPE Node*
 
 class Node {
@@ -56,12 +55,17 @@ class symbolRow {
 class symbolTable {
   public:
 	vector<symbolRow> symbolTable;
+	bool isWhileScope = false;
 	bool contains(string id, vector<string> type);
 };
 
 void m_glob();
 
 void m_newScope();
+
+void m_newScopeWhile();
+
+void m_endScope();
 
 void end_scope();
 
@@ -113,6 +117,7 @@ class formalsDecl : Node {
 
 class statements : Node {
   public:
+	vector<statement> vecStatements;
 	statements(statement &statement);
 	statements(statements &statements, statement &statement);
 };
@@ -126,14 +131,22 @@ class statement : Node {
 class OpenStatement : Node {
   public:
 	OpenStatement(string keyWord, exp &exp, statement &statement);
-	OpenStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement, OpenStatement &OpenStatement);
+	OpenStatement(string firstKeyWord,
+				  exp &exp,
+				  ClosedStatement &ClosedStatement,
+				  string secondKeyWord,
+				  OpenStatement &OpenStatement);
 	OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement);
 };
 
 class ClosedStatement : Node {
   public:
 	ClosedStatement(SimpleStatement &SimpleStatement);
-	ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement, OpenStatement &OpenStatement);
+	ClosedStatement(string firstKeyWord,
+					exp &exp,
+					ClosedStatement &ClosedStatement,
+					string secondKeyWord,
+					OpenStatement &OpenStatement);
 	ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement);
 };
 
@@ -175,6 +188,7 @@ class typeAnnotation : Node {
 
 class exp : Node {
   public:
+	string type;
 	exp(exp &exp);
 	exp(exp &firstExp, string op, exp &secExp);
 	exp(string id);

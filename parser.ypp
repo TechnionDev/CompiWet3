@@ -64,7 +64,7 @@ program: m_glob funcs {$$ = program();};
 funcs: /*epsilon*/{$$ = funcs()};|
         funcDecl funcs {$$ = funcs();};
 
-funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $4, $7);};
+funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $5, $8);};
 
 retType: type{$$ = retType($1);};
         |VOID{$$ = retType($1.type);};
@@ -83,15 +83,15 @@ statements: statement{$$ = statements($1);}
 statement: OpenStatement {$$ = statement($1);}
 	|ClosedStatement {$$ = statement($1);};
 
-OpenStatement: IF LPAREN exp RPAREN statement{$$ = OpenStatement($1.keyWord, $3, $5);}
-		|IF LPAREN exp RPAREN ClosedStatement ELSE OpenStatement{$$ = OpenStatement($1.keyWord, $3, $5, $7);}
-		|WHILE LPAREN exp RPAREN OpenStatement{$$ = OpenStatement($1.keyWord, $3, $5);};
+OpenStatement: IF LPAREN m_newScope exp RPAREN statement{$$ = OpenStatement($1.keyWord, $4, $6);}
+		|IF LPAREN m_newScope exp RPAREN ClosedStatement m_endScope ELSE m_newScope OpenStatement{$$ = OpenStatement($1.keyWord, $4, $6, $8.keyWord, $10);}
+		|WHILE m_newScopeWhile LPAREN exp RPAREN OpenStatement{$$ = OpenStatement($1.keyWord, $4, $6);};
 
 ClosedStatement:SimpleStatement {$$ = ClosedStatement($1);}
-		|IF LPAREN exp RPAREN ClosedStatement ELSE ClosedStatement{$$ = ClosedStatement($1.keyWord,$3, $5, $7);}
-		|WHILE LPAREN exp RPAREN ClosedStatement{$$ = ClosedStatement($1.keyWord, $3, $5);};
+		|IF m_newScope LPAREN exp RPAREN ClosedStatement ELSE m_newScope ClosedStatement{$$ = ClosedStatement($1.keyWord,$4, $6, $7,$9);}
+		|WHILE m_newScopeWhile LPAREN exp RPAREN ClosedStatement{$$ = ClosedStatement($1.keyWord, $4, $6);};
 
-SimpleStatement: LBRACE statements RBRACE{$$ =SimpleStatement($2);} //TODO - Maybe we need to perform the m_nesScope() function here
+SimpleStatement: LBRACE m_newScope statements RBRACE{$$ =SimpleStatement($3);} //TODO - Maybe we need to perform the m_nesScope() function here
 	|typeAnnotation type ID SC{$$ = SimpleStatement($1,$2,$3.IdStr);}
 	|typeAnnotation type ID ASSIGN exp SC{$$ = SimpleStatement($1,$2,$3.IdStr,$5);}
 	|ID ASSIGN exp SC{$$ = SimpleStatement($1.IdStr ,$2);}
@@ -134,10 +134,13 @@ exp: LPAREN exp RPAREN{$$ = exp($2);};
 	|exp RELOPLEFT exp{$$ = exp($1, $2.op, $3);};
 	|LPAREN typeAnnotation type RPAREN exp{$$ = exp($2, $3, $5);};
 
-m_glob:     {Semantics::m_glob();};
+m_glob: /*epsilon*/     {Semantics::m_glob();};
 
 m_newScope: /*epsilon*/ {Semantics::m_newScope();};
 
+m_newScopeWhile: /*epsilon*/    {Semantics::m_newScopeWhile();};
+
+m_endScope: /*epsilon*/         {Semantics::m_endScope();};
 %%
 
 void yyerror (const char* err) {

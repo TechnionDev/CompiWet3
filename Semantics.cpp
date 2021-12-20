@@ -51,6 +51,19 @@ void m_newScope() {
 	offsetStack.push_back(*offsetStack.end());
 }
 
+void m_newScopeWhile() {
+	//Create and insert new scope table
+	symbolTable new_scope;
+	new_scope.isWhileScope = true;
+	globSymTable.push_back(new_scope);
+	//Copy the last offset and insert as new offset on top of the stack
+	offsetStack.push_back(*offsetStack.end());
+}
+
+void m_endScope() {
+	end_scope();
+}
+
 void end_scope() {
 	endScope();
 	symbolTable table = globSymTable.pop_back();
@@ -105,9 +118,9 @@ funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &
 		funcTypes.push_back(formal.type);
 		funcConstTypes.push_back(formal.isConst);
 	}
-	currentFunctionScope = id;
 	symbolRow symbol_row(id, 0, funcTypes, false, funcConstTypes, true);
 	globSymTable.end()->symbolTable.push_back(symbol_row);
+	end_scope();
 }
 
 retType::retType(type &type) : Node("retType") {
@@ -162,15 +175,115 @@ formalsDecl::formalsDecl(typeAnnotation &typeAnnotation, type &type, string id) 
 	this->isConst = typeAnnotation;
 }
 
-statements::statements(statement &statement) {
+statements::statements(statement &statement) : Node("statements") {
+	this->vecStatements.push_back(statement);
+}
+
+statements::statements(statements &statements, statement &statement) : Node("statements") {
+	this->vecStatements = statements.vecStatements;
+	this->vecStatements.push_back(statement);
+}
+
+statement::statement(OpenStatement &OpenStatement) : Node("statement") {
+}
+
+statement::statement(ClosedStatement &ClosedStatement) : Node("statement") {
+}
+
+OpenStatement::OpenStatement(string keyWord, exp &exp, statement &statement) : Node("OpenStatement") {
+	if (keyWord != "IF") {
+		errorSyn(lineno);
+		exit(0);
+	}
+	if (exp.type != "BOOL") {
+		errorMismatch(lineno);
+		exit(0);
+	}
+	end_scope();
+}
+
+OpenStatement::OpenStatement(string firstKeyWord,
+							 exp &exp,
+							 ClosedStatement &ClosedStatement,
+							 string secondKeyWord,
+							 OpenStatement &OpenStatement) : Node("OpenStatement") {
+	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
+		errorSyn(lineno);
+		exit(0);
+	}
+	if (exp.type != "BOOL") {
+		errorMismatch(lineno);
+		exit(0);
+	}
+	end_scope();
+}
+
+OpenStatement::OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement) : Node("OpenStatement") {
+	if (firstKeyWord != "WHILE") {
+		errorSyn(lineno);
+		exit(0);
+	}
+	if (exp.type != "BOOL") {
+		errorMismatch(lineno);
+		exit(0);
+	}
+	end_scope();
+}
+
+ClosedStatement::ClosedStatement(SimpleStatement &SimpleStatement) : Node("ClosedStatement") {
 
 }
 
-statements::statements(statements &statements, statement &statement) {
+ClosedStatement::ClosedStatement(string firstKeyWord, exp &exp, ClosedStatement &ClosedStatement,
+								 string secondKeyWord, OpenStatement &OpenStatement) : Node("ClosedStatement") {
+	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
+		errorSyn(lineno);
+		exit(0);
+	}
+	if (exp.type != "BOOL") {
+		errorMismatch(lineno);
+		exit(0);
+	}
+	end_scope();
+}
+
+ClosedStatement::ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement) : Node("ClosedStatement") {
+	if (firstKeyWord != "WHILE") {
+		errorSyn(lineno);
+		exit(0);
+	}
+	if (exp.type != "BOOL") {
+		errorMismatch(lineno);
+		exit(0);
+	}
+	end_scope();
+}
+
+SimpleStatement::SimpleStatement(string cmd) : Node("SimpleStatement") {
+
+} //return, break, continue
+SimpleStatement::SimpleStatement(statements &statements) : Node("SimpleStatement") {
+	end_scope();
+}
+SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id) : Node("SimpleStatement") {
+
+}
+SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp) : Node(
+	"SimpleStatement") {
+
+}
+SimpleStatement::SimpleStatement(string id, exp &exp) : Node("SimpleStatement") {
+
+}
+SimpleStatement::SimpleStatement(call &call) : Node("SimpleStatement") {
+
+}
+SimpleStatement::SimpleStatement(exp &exp) : Node("SimpleStatement") {
 
 }
 
-type::type(string typeName) {
+type::type(string
+		   typeName) {
 	if (typeName == "INT") {
 		typeName = "INT";
 	} else if (typeName == "BYTE") {
@@ -178,11 +291,13 @@ type::type(string typeName) {
 	} else if (typeName == "BOOL") {
 		typeName = "BOOL";
 	} else {
-		//TODO: print desired error
+//TODO: print desired error
 	}
 }
 
-typeAnnotation::typeAnnotation(string annoType) : annoType(annoType) {};
+typeAnnotation::typeAnnotation(string
+							   annoType) :
+	annoType(annoType) {};
 
 SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id) {
 	//TODO - firs need to check if the id already exist, and than insert it
@@ -241,7 +356,10 @@ SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, str
 	}
 }
 
-SimpleStatement::SimpleStatement(string id, exp &exp) {
+SimpleStatement::SimpleStatement(string
+								 id,
+								 exp &exp
+) {
 
 }
 
