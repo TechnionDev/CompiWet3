@@ -3,6 +3,7 @@
 
 #include "hw3_output.hpp"
 #include "SymbolTable.h"
+#include <string.h>
 using namespace std;
 class Node;
 class symbolTable;
@@ -156,7 +157,7 @@ class SimpleStatement : Node {
 	SimpleStatement(statements &statements);
 	SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id);
 	SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp);
-	SimpleStatement(string id, exp &exp);
+	SimpleStatement(string id, string assign="ASSIGN", exp &exp);
 	SimpleStatement(call &call);
 	SimpleStatement(exp &exp);
 
@@ -182,7 +183,7 @@ class type : Node {
 
 class typeAnnotation : Node {
   public:
-	string annoType;
+	bool isConst;
 	typeAnnotation(string annoType = "");
 };
 

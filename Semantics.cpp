@@ -82,8 +82,15 @@ void end_scope() {
 	}
 }
 
-bool findIdentifier(string id) {
+bool isIdentifierExists(string id) {
+	//todo:: implement
+}
 
+string findIdentifierType(string id){
+	//todo:: implement
+}
+bool isIdentifierConst(string id){
+	//todo:: implement
 }
 //////////////////////////////////////////////////
 
@@ -95,7 +102,7 @@ program::program() : Node("program") {
 }
 
 funcs::funcs() : Node("funcs") {
-	//nothing?
+//todo:: nothing?
 }
 
 funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &statements) : Node("funcsDecl") {
@@ -106,7 +113,7 @@ funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &
 		}
 		mainExits = true;
 	}
-	if (findIdentifier(id)) {
+	if (isIdentifierExists(id)) {
 		output::errorDef(lineno, id);
 		exit(0);
 	}
@@ -129,7 +136,7 @@ retType::retType(type &type) : Node("retType") {
 
 retType::retType(string typeName) : Node("retType") {
 	if (typeName != "VOID") {
-		void errorSyn(int lineno);
+		output::errorSyn(lineno);
 		exit(0);
 	}
 	this.typeName = typeName;
@@ -185,18 +192,20 @@ statements::statements(statements &statements, statement &statement) : Node("sta
 }
 
 statement::statement(OpenStatement &OpenStatement) : Node("statement") {
+	//todo:: nothing?
 }
 
 statement::statement(ClosedStatement &ClosedStatement) : Node("statement") {
+	//todo:: nothing?
 }
 
 OpenStatement::OpenStatement(string keyWord, exp &exp, statement &statement) : Node("OpenStatement") {
 	if (keyWord != "IF") {
-		errorSyn(lineno);
+		output::errorSyn(lineno);
 		exit(0);
 	}
 	if (exp.type != "BOOL") {
-		errorMismatch(lineno);
+		output::errorMismatch(lineno);
 		exit(0);
 	}
 	end_scope();
@@ -208,11 +217,11 @@ OpenStatement::OpenStatement(string firstKeyWord,
 							 string secondKeyWord,
 							 OpenStatement &OpenStatement) : Node("OpenStatement") {
 	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
-		errorSyn(lineno);
+		output::errorSyn(lineno);
 		exit(0);
 	}
 	if (exp.type != "BOOL") {
-		errorMismatch(lineno);
+		output::errorMismatch(lineno);
 		exit(0);
 	}
 	end_scope();
@@ -220,28 +229,28 @@ OpenStatement::OpenStatement(string firstKeyWord,
 
 OpenStatement::OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement) : Node("OpenStatement") {
 	if (firstKeyWord != "WHILE") {
-		errorSyn(lineno);
+		output::errorSyn(lineno);
 		exit(0);
 	}
 	if (exp.type != "BOOL") {
-		errorMismatch(lineno);
+		output::errorMismatch(lineno);
 		exit(0);
 	}
 	end_scope();
 }
 
 ClosedStatement::ClosedStatement(SimpleStatement &SimpleStatement) : Node("ClosedStatement") {
-
+	//todo:: nothing?
 }
 
 ClosedStatement::ClosedStatement(string firstKeyWord, exp &exp, ClosedStatement &ClosedStatement,
 								 string secondKeyWord, OpenStatement &OpenStatement) : Node("ClosedStatement") {
 	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
-		errorSyn(lineno);
+		output::errorSyn(lineno);
 		exit(0);
 	}
 	if (exp.type != "BOOL") {
-		errorMismatch(lineno);
+		output::errorMismatch(lineno);
 		exit(0);
 	}
 	end_scope();
@@ -249,38 +258,85 @@ ClosedStatement::ClosedStatement(string firstKeyWord, exp &exp, ClosedStatement 
 
 ClosedStatement::ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement) : Node("ClosedStatement") {
 	if (firstKeyWord != "WHILE") {
-		errorSyn(lineno);
+		output::errorSyn(lineno);
 		exit(0);
 	}
 	if (exp.type != "BOOL") {
-		errorMismatch(lineno);
+		output::errorMismatch(lineno);
 		exit(0);
 	}
 	end_scope();
 }
 
 SimpleStatement::SimpleStatement(string cmd) : Node("SimpleStatement") {
+	switch (cmd) {
+		case "RETURN":
+			break;
+		case "BREAK":
+			break;
+		case "CONTINUE":
+			break;
+	}
+} //return VOID, break, continue
 
-} //return, break, continue
 SimpleStatement::SimpleStatement(statements &statements) : Node("SimpleStatement") {
 	end_scope();
-}
-SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id) : Node("SimpleStatement") {
+}	//LBRACE m_newScope statements RBRACE
 
-}
+SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id) : Node("SimpleStatement") {
+	if (isIdentifierExists(id)) {
+		output::errorDef(lineno, id);
+		exit(0)
+	}
+	if(typeAnnotation.isConst){
+		output::errorConstDef(lineno);
+		exit(0);
+	}
+	int pos = offsetStack.end() + 1;
+	offsetStack.end() = pos;
+	symbolRow newIdentifier(id, pos, {type}, typeAnnotation.isConst, {}, false);
+	globSymTable.end()->symbolTable.push_back(newIdentifier);
+} //typeAnnotation type ID SC
+
 SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp) : Node(
 	"SimpleStatement") {
+	if (isIdentifierExists(id)) {
+		output::errorDef(lineno, id);
+		exit(0)
+	}
+	if(type.typeName != exp.type){
+		output::errorMismatch(lineno);
+		exit(0);
+	}
+	int pos = offsetStack.end() + 1;
+	offsetStack.end() = pos;
+	symbolRow newIdentifier(id, pos, {type}, typeAnnotation.isConst, {}, false);
+	globSymTable.end()->symbolTable.push_back(newIdentifier);
+}	//typeAnnotation type ID ASSIGN exp SC
 
-}
-SimpleStatement::SimpleStatement(string id, exp &exp) : Node("SimpleStatement") {
+SimpleStatement::SimpleStatement(string id, string assign="ASSIGN", exp &exp) : Node("SimpleStatement") {
+	if (!isIdentifierExists(id)) {
+		output::errorUndef(lineno, id);
+		exit(0)
+	}
+	string idType = findIdentifierType(id);
+	if(idType != exp.type){
+		output::errorMismatch(lineno);
+		exit(0);
+	}
+	if (isIdentifierConst(id)){
+		output::errorConstMismatch(lineno);
+		exit(0);
+	}
+}//ID ASSIGN exp SC
 
-}
 SimpleStatement::SimpleStatement(call &call) : Node("SimpleStatement") {
-
+	//todo:: nothing?
 }
+
 SimpleStatement::SimpleStatement(exp &exp) : Node("SimpleStatement") {
 
-}
+}//RETURN exp SC
 
 type::type(string
 		   typeName) {
