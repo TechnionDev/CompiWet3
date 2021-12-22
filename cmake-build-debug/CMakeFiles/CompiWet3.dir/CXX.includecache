@@ -6,11 +6,39 @@
 
 #IncludeRegexTransform: 
 
-D:/Study/Compilation/HW/HW3/CompiWet3/main.cpp
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/Semantics.h
+hw3_output.hpp
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/hw3_output.hpp
+SymbolTable.h
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/SymbolTable.h
+string.h
+-
+
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/SymbolTable.h
+string
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/string
+enums.h
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/enums.h
+stack
+-
+list
+-
+
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/enums.h
+
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/hw3_output.hpp
+vector
+-
+string
+-
+
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/main.cpp
 iostream
 -
 vector
 -
 string
 -
+Semantics.h
+/cygdrive/d/Study/Compilation/HW/HW3/CompiWet3/Semantics.h
 
