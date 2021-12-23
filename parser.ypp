@@ -21,8 +21,40 @@
     Str* str;
     Annotation* anno;
     program program;
+    funcs funcs;
+    funcDecl funcDecl;
+    retType retType;
+    formals formals;
+    formalsList formalsList;
+    formalDecl formalDecl;
+    statements statements;
+    statement statement;
+    OpenStatement OpenStatement;
+    ClosedStatement ClosedStatement;
+    SimpleStatement SimpleStatement;
+    call call;
+    expList expList;
+    type type;
+    typeAnnotation typeAnnotation;
+    exp exp;
 };
 %type<program> program
+%type<funcs> funcs
+%type<funcDecl> funcDecl
+%type<retType> retType
+%type<formals> formals
+%type<formalsList> formalsList
+%type<formalDecl> formalDecl
+%type<statements> statements
+%type<statement> statement
+%type<OpenStatement> OpenStatement
+%type<ClosedStatement> ClosedStatement
+%type<SimpleStatement> SimpleStatement
+%type<call> call
+%type<expList> expList
+%type<type> type
+%type<typeAnnotation> typeAnnotation
+%type<exp> exp
 
 %nonassoc <type> VOID;
 %nonassoc <type> INT;
