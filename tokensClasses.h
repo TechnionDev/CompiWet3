@@ -5,7 +5,6 @@
 #include <list>
 #include <vector>
 #include <string>
-#include "enums.h"
 #include "Semantics.h"
 using namespace std;
 
@@ -38,9 +37,9 @@ class Cmd : public Node {
 };
 
 class Parenthesis : public Node {
-	parenEnum type;
+	string type;
   public:
-	Parenthesis(parenEnum parenType) : type(parenType) {}
+	Parenthesis(string parenType) : type(parenType) {}
 };
 
 class Annotation : public Node {
@@ -50,12 +49,9 @@ class Annotation : public Node {
 };
 
 class Num : public Node {
-	int val;
-	std::string str;
   public:
-	Num(std::string strNum) : val(CharPointerToInt(strNum)), str(strNum) {}
-	int getVal() { return val; }
-	std::string getStr() { return str; }
+	string str;
+	Num(std::string strNum) : str(strNum) {}
 };
 
 class Id : public Node {
@@ -65,8 +61,8 @@ class Id : public Node {
 };
 
 class Str : public Node {
-	std::string str;
   public:
+	std::string str;
 	Str(std::string strVal) : str(strVal) {}
 };
 

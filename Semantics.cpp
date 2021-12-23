@@ -1,28 +1,39 @@
 #include "Semantics.h"
 #include "hw3_output.hpp"
-
+vector<symbolTable> globSymTable = {};
+vector<int> offsetStack = {};
 symbolRow::symbolRow(string name,
 					 int pos,
 					 vector<string> types,
 					 bool is_const,
 					 vector<bool> constFormals,
-					 bool isFunc = false)
+					 bool isFunc)
 	: name(name),
 	  pos(pos),
 	  types(types),
 	  is_const(is_const),
 	  constFormals(constFormals),
-	  isFunc(isFunc) {}
+	  isFunc(isFunc) {
+
+}
+
+symbolRow::symbolRow(const symbolRow &row) : name(row.name),
+											 pos(row.pos),
+											 types(row.types),
+											 is_const(row.is_const),
+											 constFormals(row.constFormals),
+											 isFunc(row.isFunc) {
+
+}
 
 bool symbolRow::operator==(symbolRow &other) {
 	return (this->name == other.name);// && (this->types == other.types);
 }
 
 bool symbolTable::contains(string id, vector<string> type) {
-	symbolRow dummy(id, -1, type, dummyConst, {});
+	symbolRow dummy;
 	bool res = false;
-	vector<symbolRow>::iterator it = this->symbolTable.begin();
-	for (it; it != this->symbolTable.end(); it++) {
+	for (auto it = this->SymbolTable.begin(); it != this->SymbolTable.end(); it++) {
 		res = (*it == dummy);
 		if (res) {
 			return res;
@@ -34,11 +45,11 @@ bool symbolTable::contains(string id, vector<string> type) {
 void m_glob() {
 	symbolTable new_scope;
 	vector<string> print_vec = {"VOID", "STRING"};
-	symbolRow print_our("print", 0, print_vec, false, {});
+	symbolRow print_our("print", 0, print_vec, false, {}, false);
 	vector<string> printi_vec = {"VOID", "INT"};
-	symbolRow printi_our("printi", 0, printi_vec, false, {});
-	new_scope.symbolTable.push_back(print_our);
-	new_scope.symbolTable.push_back(printi_our);
+	symbolRow printi_our("printi", 0, printi_vec, false, {}, false);
+	new_scope.SymbolTable.push_back(print_our);
+	new_scope.SymbolTable.push_back(printi_our);
 	globSymTable.push_back(new_scope);
 	offsetStack.push_back(0);
 	return;
@@ -67,9 +78,11 @@ void m_endScope() {
 
 void end_scope() {
 	output::endScope();
-	symbolTable table = globSymTable.pop_back();
-	int offset = offsetStack.pop_back();
-	for (auto it: table.symbolTable) {
+	symbolTable table = globSymTable.back();
+	globSymTable.pop_back();
+	int offset = offsetStack.back();
+	offsetStack.pop_back();
+	for (auto it: table.SymbolTable) {
 		if (it.types.size() == 1) {
 			//ID
 			output::printID(it.name, it.pos, it.types[0]);
@@ -86,9 +99,9 @@ void end_scope() {
 symbolRow findSymbolRow(string id) {
 	symbolRow res = symbolRow("", -1, {""}, false, {false});
 	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
-		for (auto itScope = itGlob.symbolTable.rbegin(); itScope != itGlob.symbolTable.rend(); itScope++) {
-			if (itScope.name == id) {
-				res = itScope;
+		for (auto itScope = itGlob->SymbolTable.rbegin(); itScope != itGlob->SymbolTable.rend(); itScope++) {
+			if (itScope->name == id) {
+				res = *itScope;
 				return res;
 			}
 		}
@@ -122,17 +135,32 @@ bool isIdentifierConst(string id) {
 	}
 	return res;
 }
-
-symbolRow findFunctionRow(string id) {
-	//TODO::implement
+string getRetTypeFunc() {
+	string res = "";
+	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
+		for (auto itScope = itGlob->SymbolTable.rbegin(); itScope != itGlob->SymbolTable.rend(); itScope++) {
+			if (itScope->isFunc) {
+				res = itScope->types[0];
+				return res;
+			}
+		}
+	}
+	return res;
 }
+
 bool isInWhile() {
-	//TODO::implement
+	bool res = false;
+	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
+		if (itGlob->isWhileScope) {
+			res = true;
+		}
+	}
+	return res;
 }
 //////////////////////////////////////////////////
 
 program::program() : Node("program") {
-	end_scope;
+	end_scope();
 	if (!mainExits) {
 		output::errorMainMissing();
 	}
@@ -161,12 +189,12 @@ funcsDecl::funcsDecl(retType &retType, string id, formals &formals, statements &
 	vector<string> funcTypes;
 	vector<bool> funcConstTypes;
 	funcTypes.push_back(retType.typeName);
-	for (auto formal: formals.formalsList) {
-		funcTypes.push_back(formal.type);
+	for (auto formal: formals.formalsVector) {
+		funcTypes.push_back(formal.formalType);
 		funcConstTypes.push_back(formal.isConst);
 	}
 	symbolRow symbol_row(id, 0, funcTypes, false, funcConstTypes, true);
-	globSymTable.end()->symbolTable.push_back(symbol_row);
+	globSymTable.end()->SymbolTable.push_back(symbol_row);
 	end_scope();
 }
 
@@ -179,50 +207,53 @@ retType::retType(string typeName) : Node("retType") {
 		output::errorSyn(yylineno);
 		exit(0);
 	}
-	this.typeName = typeName;
+	this->typeName = typeName;
 }
 
 formals::formals() : Node("formals") {
-	this->formalsList = {};
+	this->formalsVector = {};
 }
 
 formals::formals(formalsList &formals) : Node("formals") {
-	for (auto formal: formals.formalsList) {
-		for (auto nextFormal: formals.formalsList) {
-			if (formal == nextFormal) {
+	for (auto formal: formals.formalsVector) {
+		for (auto nextFormal: formals.formalsVector) {
+			if ((formal.isConst == nextFormal.isConst) && (formal.id == nextFormal.id)
+				&& (formal.formalType == nextFormal.formalType)) {
 				continue;
 			}
 			if (formal.id == nextFormal.id) {
-				output::errorDef(yylineno, id);
+				output::errorDef(yylineno, formal.id);
 				exit(0);
 			}
 		}
 	}
 	int i = -1;
-	for (auto it: formals.formalsList) {
-		if (it.type == "STRING") {
+	for (auto it: formals.formalsVector) {
+		if (it.formalType == "STRING") {
 			this->hasString = true;
 		}
-		symbolRow formal(it.id, i, {it.type}, true, {}, false);
-		globSymTable.end()->symbolTable.push_back(formal);
+		symbolRow formal(it.id, i, {it.formalType}, true, {}, false);
+		globSymTable.end()->SymbolTable.push_back(formal);
 		i--;
 	}
-	this->formalsList = formals;
+	this->formalsVector = formals.formalsVector;
 }
 
 formalsList::formalsList(formalsDecl &formalsDecl) : Node("formalsList") {
-	this->formalsList.push_back(formalsList);
+	this->formalsVector.push_back(formalsDecl);
 }
 
 formalsList::formalsList(formalsDecl &formalsDecl, formalsList &formalsList) : Node("formalsList") {
-	this->formalsList.push_back(formalsDecl);
-	this->formalsList.insert(this->formalsList.end(), formalsList.formalsList.begin(), formalsList.formalsList.end());
+	this->formalsVector.push_back(formalsDecl);
+	this->formalsVector.insert(this->formalsVector.end(),
+							   formalsList.formalsVector.begin(),
+							   formalsList.formalsVector.end());
 }
 
 formalsDecl::formalsDecl(typeAnnotation &typeAnnotation, type &type, string id) : Node("formalsDecl") {
 	this->id = id;
-	this->type = type;
-	this->isConst = typeAnnotation;
+	this->formalType = type.typeName;
+	this->isConst = typeAnnotation.isConst;
 }
 
 statements::statements(statement &statement) : Node("statements") {
@@ -247,7 +278,7 @@ OpenStatement::OpenStatement(string keyWord, exp &exp, statement &statement) : N
 		output::errorSyn(yylineno);
 		exit(0);
 	}
-	if (exp.type != "BOOL") {
+	if (exp.expType != "BOOL") {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -263,7 +294,7 @@ OpenStatement::OpenStatement(string firstKeyWord,
 		output::errorSyn(yylineno);
 		exit(0);
 	}
-	if (exp.type != "BOOL") {
+	if (exp.expType != "BOOL") {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -271,11 +302,11 @@ OpenStatement::OpenStatement(string firstKeyWord,
 }
 
 OpenStatement::OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement) : Node("OpenStatement") {
-	if (firstKeyWord != "WHILE") {
+	if (keyWord != "WHILE") {
 		output::errorSyn(yylineno);
 		exit(0);
 	}
-	if (exp.type != "BOOL") {
+	if (exp.expType != "BOOL") {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -292,7 +323,7 @@ ClosedStatement::ClosedStatement(string firstKeyWord, exp &exp, ClosedStatement 
 		output::errorSyn(yylineno);
 		exit(0);
 	}
-	if (exp.type != "BOOL") {
+	if (exp.expType != "BOOL") {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -300,11 +331,11 @@ ClosedStatement::ClosedStatement(string firstKeyWord, exp &exp, ClosedStatement 
 }
 
 ClosedStatement::ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement) : Node("ClosedStatement") {
-	if (firstKeyWord != "WHILE") {
+	if (keyWord != "WHILE") {
 		output::errorSyn(yylineno);
 		exit(0);
 	}
-	if (exp.type != "BOOL") {
+	if (exp.expType != "BOOL") {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -312,27 +343,25 @@ ClosedStatement::ClosedStatement(string keyWord, exp &exp, ClosedStatement &Clos
 }
 
 SimpleStatement::SimpleStatement(string cmd) : Node("SimpleStatement") {
-	switch (cmd) {
-		case "RETURN": symbolRow func = findFunctionRow();
-			if (func.types[0] != "VOID") {
-				output::errorMismatch(yylineno);
-				exit(0);
-			}
-			break;
-		case "BREAK":
-			if (!isInWhile()) {
-				output::errorUnexpectedBreak(yylineno);
-				exit(0);
-			}
-			break;
-		case "CONTINUE":
-			if (!isInWhile()) {
-				output::errorUnexpectedContinue(yylineno);
-				exit(0);
-			}
-			break;
+	if (cmd == "RETURN") {
+		string retFunc = getRetTypeFunc();
+		if (retFunc == "" || retFunc != "VOID") {
+			output::errorMismatch(yylineno);
+			exit(0);
+		}
+	} else if (cmd == "BREAK") {
+		if (!isInWhile()) {
+			output::errorUnexpectedBreak(yylineno);
+			exit(0);
+		}
+	} else if (cmd == "CONTINUE") {
+		if (!isInWhile()) {
+			output::errorUnexpectedContinue(yylineno);
+			exit(0);
+		}
 	}
-} //return VOID, break, continue
+}
+//return VOID, break, continue
 
 SimpleStatement::SimpleStatement(statements &statements) : Node("SimpleStatement") {
 	end_scope();
@@ -347,10 +376,10 @@ SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, str
 		output::errorConstDef(yylineno);
 		exit(0);
 	}
-	int pos = offsetStack.end() + 1;
-	offsetStack.end() = pos;
-	symbolRow newIdentifier(id, pos, {type}, typeAnnotation.isConst, {}, false);
-	globSymTable.end()->symbolTable.push_back(newIdentifier);
+	int pos = *offsetStack.end() + 1;
+	*offsetStack.end() = pos;
+	symbolRow newIdentifier(id, pos, {type.typeName}, typeAnnotation.isConst, {}, false);
+	globSymTable.end()->SymbolTable.push_back(newIdentifier);
 } //typeAnnotation type ID SC
 
 SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp) : Node(
@@ -359,14 +388,14 @@ SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, str
 		output::errorDef(yylineno, id);
 		exit(0);
 	}
-	if (type.typeName != exp.type) {
+	if (type.typeName != exp.expType) {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
-	int pos = offsetStack.end() + 1;
-	offsetStack.end() = pos;
-	symbolRow newIdentifier(id, pos, {type}, typeAnnotation.isConst, {}, false);
-	globSymTable.end()->symbolTable.push_back(newIdentifier);
+	int pos = *offsetStack.end() + 1;
+	*offsetStack.end() = pos;
+	symbolRow newIdentifier(id, pos, {type.typeName}, typeAnnotation.isConst, {}, false);
+	globSymTable.end()->SymbolTable.push_back(newIdentifier);
 }    //typeAnnotation type ID ASSIGN exp SC
 
 SimpleStatement::SimpleStatement(string id, string assign, exp &exp) : Node("SimpleStatement") {
@@ -379,7 +408,7 @@ SimpleStatement::SimpleStatement(string id, string assign, exp &exp) : Node("Sim
 		exit(0);
 	}
 	vector<string> idType = findIdentifierType(id);
-	if (idType.size() != 1 || idType[0] != exp.type) {
+	if (idType.size() != 1 || idType[0] != exp.expType) {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -394,8 +423,8 @@ SimpleStatement::SimpleStatement(call &call) : Node("SimpleStatement") {
 }
 
 SimpleStatement::SimpleStatement(exp &exp) : Node("SimpleStatement") {
-	symbolRow func = findFunctionRow();
-	if (func.types[0] != exp.type) {
+	string func = getRetTypeFunc();
+	if (func == "" || func != exp.expType) {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
@@ -412,9 +441,9 @@ call::call(string id, expList &expList) : Node("call") {
 		exit(0);
 	}
 	for (int i = 1; i < funcId.types.size(); i++) {
-		if (funcId.types[i] != expList.expVector[i - 1].type) {
+		if (funcId.types[i] != expList.expVector[i - 1].expType) {
 			if (id == "printi") {
-				if (expList.expVector[i - 1].type != "BYTE") {
+				if (expList.expVector[i - 1].expType != "BYTE") {
 					output::errorPrototypeMismatch(yylineno, id, funcId.types);
 					exit(0);
 				}
@@ -440,13 +469,13 @@ call::call(string id) : Node("call") {
 	this->rettype = funcId.types[0];
 }
 
-expList::expList(exp &exp) : Node("expList") {
-	this->expVectorexpVector.push_back(exp);
+expList::expList(const exp &exp1) : Node("expList") {
+	this->expVector.push_back(exp1);
 }
 
-expList::expList(exp &exp, expList &expList) : Node("expList") {
-	this->expVector.push_back(exp);
-	this->expVector.insert(this->expVector.end(), expList.begin(), expList.end());
+expList::expList(const exp &exp1,const expList &expList) : Node("expList") {
+	this->expVector.push_back(exp1);
+	this->expVector.insert(this->expVector.end(), expList.expVector.begin(), expList.expVector.end());
 }
 
 type::type(string typeName) : Node("type") {
@@ -472,28 +501,29 @@ typeAnnotation::typeAnnotation(string annoType) : Node("typeAnnotation") {
 		exit(0);
 	}
 }
-
-exp::exp(exp &exp) : Node("exp") {
-	this->type = exp.type;
+exp::exp() : Node("exp") { this->expType = "" ;}
+exp::exp(const exp &exp) : Node("exp") {
+	this->expType = exp.expType;
 }
 
-exp::exp(exp &firstExp, string op, exp &secExp) : Node("exp") {
+exp::exp(const exp &firstExp, string op,const exp &secExp) : Node("exp") {
 	if (op == "MULT" || op == "DIV" || op == "PLUS" || op == "MINUS") {
-		if ((firstExp.type != "INT" && firstExp.type != "BYTE") || (secExp.type != "INT" && secExp.type != "BYTE")) {
+		if ((firstExp.expType != "INT" && firstExp.expType != "BYTE")
+			|| (secExp.expType != "INT" && secExp.expType != "BYTE")) {
 			output::errorMismatch(yylineno);
 			exit(0);
 		}
-		if (firstExp.type == "INT" || secExp.type == "INT") {
-			this->type = "INT";
+		if (firstExp.expType == "INT" || secExp.expType == "INT") {
+			this->expType = "INT";
 		} else {
-			this->type = "BYTE";
+			this->expType = "BYTE";
 		}
 	} else if (op == "AND" || op == "OR" || op == "RELOPLEFT" || op == "RELOPNONASSOC") {
-		if ((firstExp.type != "BOOL") || (secExp.type != "BOOL")) {
+		if ((firstExp.expType != "BOOL") || (secExp.expType != "BOOL")) {
 			output::errorMismatch(yylineno);
 			exit(0);
 		}
-		this->type = "BOOL";
+		this->expType = "BOOL";
 	} else {
 		output::errorSyn(yylineno);
 		exit(0);
@@ -511,49 +541,46 @@ exp::exp(string id, string type) : Node("exp") {
 			output::errorUndef(yylineno, id);
 			exit(0);
 		}
-		this->type = res.types[0];
+		this->expType = res.types[0];
 	} else if (type == "STRING") {
-		this->type = "STRING";
+		this->expType = "STRING";
 	}
 
 } //ID,STRING
 
-exp::exp(call &call) : Node("exp") {
-	this->type = call.rettype;
+exp::exp(const call &call) : Node("exp") {
+	this->expType = call.rettype;
 }//call
 
-exp::exp(int val, bool isB = false) : Node("exp") {
+exp::exp(int val, bool isB) : Node("exp") {
 	if (isB) {
 		if (val > 255) {
 			string value = std::to_string(val);
-			output::errorByteTooLarge(lineno, value);
+			output::errorByteTooLarge(yylineno, value);
 			exit(0);
 		}
-		this->type = "BYTE";
+		this->expType = "BYTE";
 	} else {
-		this->type = "INT";
+		this->expType = "INT";
 	}
 }//INT,BYTE
 
 exp::exp(bool val) : Node("exp") {
-	this->type = "BOOL";
+	this->expType = "BOOL";
 }
 
-exp::exp(string op, exp &exp) : Node("exp") {
-	if (exp.type != "BOOL") {
+exp::exp(string op,const exp &exp) : Node("exp") {
+	if (exp.expType != "BOOL") {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
-	this->type = "BOOL";
+	this->expType = "BOOL";
 }
 
-exp::exp(typeAnnotation &typeAnnotation, type &type, exp &exp) : Node("exp") {
-	if ((type.typeName != "INT" && type.typeName != "BYTE") || (exp.type != "INT" && exp.type != "BYTE")) {
+exp::exp(const typeAnnotation &typeAnnotation,const type &type,const exp &exp) : Node("exp") {
+	if ((type.typeName != "INT" && type.typeName != "BYTE") || (exp.expType != "INT" && exp.expType != "BYTE")) {
 		output::errorMismatch(yylineno);
 		exit(0);
 	}
-	this->type = type.typeName;
+	this->expType = type.typeName;
 }
-
-
-

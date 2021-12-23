@@ -2,15 +2,14 @@
     #include <iostream>
     #include "hw3_output.hpp"
     #include "Semantics.h"
-    #include "TokensClasses.h"
+    #include "tokensClasses.h"
     using namespace std;
-    #define YYSTYPE Node*
     int yylex();
     extern int yylineno;
     void yyerror(const char* err);
 %}
 
-%union{
+%typedef union{
     Type* type;
     Op* op;
     Bool* bool;
@@ -37,7 +36,7 @@
     type type;
     typeAnnotation typeAnnotation;
     exp exp;
-};
+} STYPE;
 %type<program> program
 %type<funcs> funcs
 %type<funcDecl> funcDecl
@@ -91,14 +90,14 @@
 %right <cmd> ASSIGN;
 
 %%
-program: m_glob funcs {$$ = program();};
+program: m_glob funcs {$$ = new program()};
 
 funcs: /*epsilon*/{$$ = funcs()};|
-        funcDecl funcs {$$ = funcs();};
+        funcDecl funcs {$$ = funcs()};
 
 funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $5, $8);};
 
-retType: type{$$ = retType($1);};
+retType: type{$$ = retType($1)};
         |VOID{$$ = retType($1.type);};
 
 formals: /*epsilon*/{$$ = formals();};

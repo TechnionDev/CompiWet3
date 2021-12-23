@@ -2,7 +2,6 @@
 #define COMPIWET3__SEMANTICS_H_
 
 #include "hw3_output.hpp"
-#include "SymbolTable.h"
 #include <string.h>
 using namespace std;
 class Node;
@@ -25,8 +24,7 @@ class type;
 class typeAnnotation;
 class exp;
 
-vector<symbolTable> globSymTable;
-vector<int> offsetStack;
+extern int yylineno;
 bool mainExits = false;
 #define YYSTYPE Node*
 
@@ -38,6 +36,7 @@ class Node {
 };
 
 class symbolRow {
+  public:
 	string name;
 	int pos;
 	vector<string> types;
@@ -50,12 +49,15 @@ class symbolRow {
 			  bool is_const,
 			  vector<bool> constFormals,
 			  bool isFunc = false);
+	symbolRow();
+	symbolRow(const symbolRow& row);
 	bool operator==(symbolRow &other);
 };
 
 class symbolTable {
   public:
-	vector<symbolRow> symbolTable;
+	symbolTable();
+	vector<symbolRow> SymbolTable;
 	bool isWhileScope = false;
 	bool contains(string id, vector<string> type);
 };
@@ -96,7 +98,7 @@ class retType : Node {
 
 class formals : Node {
   public:
-	vector<formalsDecl> formalsList;
+	vector<formalsDecl> formalsVector;
 	bool hasString = false;
 	formals();
 	formals(formalsList &formalsList);
@@ -104,14 +106,14 @@ class formals : Node {
 
 class formalsList : Node {
   public:
-	vector<formalsDecl> formalsList;
+	vector<formalsDecl> formalsVector;
 	formalsList(formalsDecl &formalsDecl);
 	formalsList(formalsDecl &formalsDecl, formalsList &formalsList);
 };
 
 class formalsDecl : Node {
   public:
-	string type;
+	string formalType;
 	bool isConst;
 	string id;
 	formalsDecl(typeAnnotation &typeAnnotation, type &type, string id);
@@ -174,8 +176,8 @@ class call : Node {
 class expList : Node {
   public:
 	vector<exp> expVector;
-	expList(exp &exp);
-	expList(exp &exp, expList &expList);
+	expList(const exp &exp1);
+	expList(const exp &exp1,const expList &expList);
 };
 
 class type : Node {
@@ -192,15 +194,16 @@ class typeAnnotation : Node {
 
 class exp : Node {
   public:
-	string type;
-	exp(exp &exp);
-	exp(exp &firstExp, string op, exp &secExp);
-	exp(string id);
-	exp(call &call);
+	string expType;
+	exp();
+	exp(const exp &exp);
+	exp(const exp &firstExp, string op,const exp &secExp);
+	exp(string id, string type);
+	exp(const call &call);
 	exp(int val, bool isB = false);
 	exp(bool val);
-	exp(string op, exp &exp);
-	exp(typeAnnotation &typeAnnotation, type &type, exp &exp);
+	exp(string op,const exp &exp);
+	exp(const typeAnnotation &typeAnnotation,const type &type,const exp &exp);
 };
 
 #endif //COMPIWET3__SEMANTICS_H_
