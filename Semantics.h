@@ -26,15 +26,17 @@ class exp;
 
 extern int yylineno;
 bool mainExits = false;
-#define YYSTYPE Node*
 
 class Node {
   public:
-	string val;
-	Node() : val("") {};
-	Node(string val) : val(val) {};
-};
+	string val = "";
+	int lineNum = 0;
+	Node();
+	Node(string val, int lineNumber = -1) : val(val), lineNum(lineNumber) {};
+	virtual ~Node() = default;
 
+};
+#define YYSTYPE Node*
 class symbolRow {
   public:
 	string name;
@@ -50,7 +52,7 @@ class symbolRow {
 			  vector<bool> constFormals,
 			  bool isFunc = false);
 	symbolRow();
-	symbolRow(const symbolRow& row);
+	symbolRow(const symbolRow &row);
 	bool operator==(symbolRow &other);
 };
 
@@ -74,136 +76,138 @@ void end_scope();
 
 //////////////////////////////////////////////////
 
-class program : Node {
+class program : public Node {
   public:
 	program();
+	program(const program &Prog);
 };
 
-class funcs : Node {
+class funcs : public Node {
   public:
 	funcs();
 };
 
-class funcsDecl : Node {
+class funcsDecl : public Node {
   public:
-	funcsDecl(retType &retType, string id, formals &formals, statements &statements);
+	funcsDecl(retType *retType, Node *id, formals *formals, statements *statements);
 };
 
-class retType : Node {
+class retType : public Node {
   public:
 	string typeName;
-	retType(type &type);
-	retType(string typeName);
+	retType(type *type);
+	retType(Node *typeName);
 };
 
-class formals : Node {
+class formals : public Node {
   public:
 	vector<formalsDecl> formalsVector;
 	bool hasString = false;
 	formals();
-	formals(formalsList &formalsList);
+	formals(formalsList *formalsList);
 };
 
-class formalsList : Node {
+class formalsList : public Node {
   public:
 	vector<formalsDecl> formalsVector;
-	formalsList(formalsDecl &formalsDecl);
-	formalsList(formalsDecl &formalsDecl, formalsList &formalsList);
+	formalsList(formalsDecl *formalsDecl);
+	formalsList(formalsDecl *formalsDecl, formalsList *formalsList);
 };
 
-class formalsDecl : Node {
+class formalsDecl : public Node {
   public:
 	string formalType;
 	bool isConst;
 	string id;
-	formalsDecl(typeAnnotation &typeAnnotation, type &type, string id);
+	formalsDecl(typeAnnotation *typeAnnotation, type *type, Node *id);
 };
 
-class statements : Node {
+class statements : public Node {
   public:
 	vector<statement> vecStatements;
-	statements(statement &statement);
-	statements(statements &statements, statement &statement);
+	statements(statement *statement);
+	statements(statements *statements, statement *statement);
 };
 
-class statement : Node {
+class statement : public Node {
   public:
-	statement(OpenStatement &OpenStatement);
-	statement(ClosedStatement &ClosedStatement);
+	statement(OpenStatement *OpenStatement);
+	statement(ClosedStatement *ClosedStatement);
 };
 
-class OpenStatement : Node {
+class OpenStatement : public Node {
   public:
-	OpenStatement(string keyWord, exp &exp, statement &statement);
+	OpenStatement(string keyWord, exp *exp, statement *statement, int lineNumber);
 	OpenStatement(string firstKeyWord,
-				  exp &exp,
-				  ClosedStatement &ClosedStatement,
-				  string secondKeyWord,
-				  OpenStatement &OpenStatement);
-	OpenStatement(string keyWord, exp &exp, OpenStatement &OpenStatement);
+				  exp *exp,
+				  ClosedStatement *ClosedStatement,
+				  string econdKeyWord,
+				  OpenStatement *OpenStatement,
+				  int lineNumber);
+	OpenStatement(string keyWord, exp *exp, OpenStatement *OpenStatement, int lineNumber);
 };
 
-class ClosedStatement : Node {
+class ClosedStatement : public Node {
   public:
-	ClosedStatement(SimpleStatement &SimpleStatement);
+	ClosedStatement(SimpleStatement *SimpleStatement);
 	ClosedStatement(string firstKeyWord,
-					exp &exp,
-					ClosedStatement &ClosedStatement,
+					exp *exp,
+					ClosedStatement *closed_Statement,
 					string secondKeyWord,
-					OpenStatement &OpenStatement);
-	ClosedStatement(string keyWord, exp &exp, ClosedStatement &ClosedStatement);
+					ClosedStatement *closed_Statement2, int lineNumber);
+	ClosedStatement(string keyWord, exp *exp, ClosedStatement *ClosedStatement, int lineNumber);
 };
 
-class SimpleStatement : Node {
+class SimpleStatement : public Node {
   public:
-	SimpleStatement(string cmd); //return, break, continue
-	SimpleStatement(statements &statements);
-	SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id);
-	SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp);
-	SimpleStatement(string id, string assign, exp &exp);
-	SimpleStatement(call &call);
-	SimpleStatement(exp &exp);
+	SimpleStatement(Node* cmd); //return, break, continue
+	SimpleStatement(statements *statements);
+	SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id);
+	SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id, exp *exp);
+	SimpleStatement(Node* id, string assign, exp *exp);
+	SimpleStatement(call *call);
+	SimpleStatement(Node* node,exp *exp);
 
 };
 
-class call : Node {
+class call : public Node {
   public:
 	string rettype;
-	call(string id, expList &expList);
-	call(string id);
+	call(Node* id, expList *expList);
+	call(Node* id);
 };
 
-class expList : Node {
+class expList : public Node {
   public:
 	vector<exp> expVector;
-	expList(const exp &exp1);
-	expList(const exp &exp1,const expList &expList);
+	expList( exp *exp1);
+	expList( exp *exp1, expList *expList);
 };
 
-class type : Node {
+class type : public Node {
   public:
 	string typeName;
 	type(string typeName);
 };
 
-class typeAnnotation : Node {
+class typeAnnotation : public Node {
   public:
 	bool isConst;
 	typeAnnotation(string annoType = "");
 };
 
-class exp : Node {
+class exp : public Node {
   public:
 	string expType;
 	exp();
 	exp(const exp &exp);
-	exp(const exp &firstExp, string op,const exp &secExp);
+	exp(const exp &firstExp, string op, const exp &secExp);
 	exp(string id, string type);
 	exp(const call &call);
 	exp(int val, bool isB = false);
 	exp(bool val);
-	exp(string op,const exp &exp);
-	exp(const typeAnnotation &typeAnnotation,const type &type,const exp &exp);
+	exp(string op, const exp &exp);
+	exp(const typeAnnotation &typeAnnotation, const type &type, const exp &exp);
 };
 
 #endif //COMPIWET3__SEMANTICS_H_

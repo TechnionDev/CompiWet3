@@ -2,168 +2,150 @@
     #include <iostream>
     #include "hw3_output.hpp"
     #include "Semantics.h"
-    #include "tokensClasses.h"
     using namespace std;
     int yylex();
     extern int yylineno;
     void yyerror(const char* err);
 %}
 
-%typedef union{
-    Type* type;
-    Op* op;
-    Bool* bool;
-    Cmd* cmd;
-    Parenthesis* paren;
-    Num* num;
-    Id* id;
-    Str* str;
-    Annotation* anno;
-    program program;
-    funcs funcs;
-    funcDecl funcDecl;
-    retType retType;
-    formals formals;
-    formalsList formalsList;
-    formalDecl formalDecl;
-    statements statements;
-    statement statement;
-    OpenStatement OpenStatement;
-    ClosedStatement ClosedStatement;
-    SimpleStatement SimpleStatement;
-    call call;
-    expList expList;
-    type type;
-    typeAnnotation typeAnnotation;
-    exp exp;
-} STYPE;
-%type<program> program
-%type<funcs> funcs
-%type<funcDecl> funcDecl
-%type<retType> retType
-%type<formals> formals
-%type<formalsList> formalsList
-%type<formalDecl> formalDecl
-%type<statements> statements
-%type<statement> statement
-%type<OpenStatement> OpenStatement
-%type<ClosedStatement> ClosedStatement
-%type<SimpleStatement> SimpleStatement
-%type<call> call
-%type<expList> expList
-%type<type> type
-%type<typeAnnotation> typeAnnotation
-%type<exp> exp
-
-%nonassoc <type> VOID;
-%nonassoc <type> INT;
-%nonassoc <type> BYTE;
-%nonassoc <type> B;
-%nonassoc <type> BOOL;
-%nonassoc <anno> CONST;
-%nonassoc <bool> TRUE;
-%nonassoc <bool> FALSE;
-%nonassoc <cmd> RETURN;
-%nonassoc <cmd> WHILE;
-%nonassoc <cmd> BREAK;
-%nonassoc <cmd> CONTINUE;
-%nonassoc <cmd> SC;
-%nonassoc <cmd> COMMA;
-%nonassoc <paren> LBRACE;
-%nonassoc <paren> RBRACE;
-%nonassoc <id> ID;
-%nonassoc <num>  NUM;
-%nonassoc <str> STRING;
-%left <paren> LPAREN;
-%left <paren> RPAREN;
-%right <op> NOT;
-%left  <op> MULT;
-%left  <op> DIV;
-%left  <op> PLUS;
-%left  <op> MINUS;
-%nonassoc <op> RELOPNONASSOC;
-%left <op> RELOPLEFT;
-%left <op> AND;
-%left <op> OR;
-%right <cmd> IF;
-%right <cmd> ELSE;
-%right <cmd> ASSIGN;
+%nonassoc VOID;
+%nonassoc INT;
+%nonassoc BYTE;
+%nonassoc B;
+%nonassoc BOOL;
+%nonassoc CONST;
+%nonassoc TRUE;
+%nonassoc FALSE;
+%nonassoc RETURN;
+%nonassoc WHILE;
+%nonassoc BREAK;
+%nonassoc CONTINUE;
+%nonassoc SC;
+%nonassoc COMMA;
+%nonassoc LBRACE;
+%nonassoc RBRACE;
+%nonassoc ID;
+%nonassoc NUM;
+%nonassoc STRING;
+%left LPAREN;
+%left RPAREN;
+%right NOT;
+%left MULT;
+%left DIV;
+%left PLUS;
+%left MINUS;
+%nonassoc RELOPNONASSOC;
+%left RELOPLEFT;
+%left AND;
+%left OR;
+%right IF;
+%right ELSE;
+%right ASSIGN;
 
 %%
 program: m_glob funcs {$$ = new program()};
 
-funcs: /*epsilon*/{$$ = funcs()};|
-        funcDecl funcs {$$ = funcs()};
+funcs: /*epsilon*/{$$ = new funcs()};|
+        funcDecl funcs {$$ = new funcs()};
 
-funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = funcsDecl($1, $2.IdStr, $5, $8);};
+funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = new funcsDecl(
+                                                                                    dynamic_cast<retType*>($1),
+                                                                                    $2,
+                                                                                    dynamic_cast<formals*>($5),
+                                                                                    dynamic_cast<statements*>($8));
+                                                                                    };
 
-retType: type{$$ = retType($1)};
-        |VOID{$$ = retType($1.type);};
+retType: type{$$ = new retType(dynamic_cast<type*>($1))};
+        |VOID{$$ = new retType($1);};
 
-formals: /*epsilon*/{$$ = formals();};
-	|formalsList{$$ = formals($1);};
+formals: /*epsilon*/{$$ = new formals();};
+	|formalsList{$$ = new formals(dynamic_cast<formalsList*>($1));};
 
-formalsList: formalDecl{$$ = formalsList($1);};
-	|formalDecl COMMA formalsList{$$ = formalsList($1, $3);};
+formalsList: formalDecl{$$ = new formalsList(dynamic_cast<formalsDecl*>($1));};
+	|formalDecl COMMA formalsList{$$ = new formalsList(dynamic_cast<formalsDecl*>($1), dynamic_cast<formalsList*>($3));};
 
-formalDecl: typeAnnotation type ID{$$ = formalDecl($1,$2,id.IdStr);};
+formalDecl: typeAnnotation type ID{$$ = new formalsDecl(dynamic_cast<typeAnnotation*>($1)
+                                                        ,dynamic_cast<type*>($2),
+                                                        $3);};
 
-statements: statement{$$ = statements($1);}
-	|statements statement{$$ = statements($1, $2);};
+statements: statement{$$ = new statements(dynamic_cast<statement*>($1));}
+	|statements statement{$$ = new statements(dynamic_cast<statements*>($1), dynamic_cast<statement*>($2));};
 
-statement: OpenStatement {$$ = statement($1);}
-	|ClosedStatement {$$ = statement($1);};
+statement: OpenStatement {$$ = new statement(dynamic_cast<OpenStatement*>($1));}
+	|ClosedStatement {$$ = new statement(dynamic_cast<ClosedStatement*>($1));};
 
-OpenStatement: IF LPAREN m_newScope exp RPAREN statement{$$ = OpenStatement($1.keyWord, $4, $6);}
-		|IF LPAREN m_newScope exp RPAREN ClosedStatement m_endScope ELSE m_newScope OpenStatement{$$ = OpenStatement($1.keyWord, $4, $6, $8.keyWord, $10);}
-		|WHILE m_newScopeWhile LPAREN exp RPAREN OpenStatement{$$ = OpenStatement($1.keyWord, $4, $6);};
+OpenStatement: IF LPAREN m_newScope exp RPAREN statement{$$ = new OpenStatement("IF",
+                                                                                dynamic_cast<exp*>($4),
+                                                                                dynamic_cast<statement*>($6),
+                                                                                $1->lineNum);}
+		|IF LPAREN m_newScope exp RPAREN ClosedStatement  ELSE m_endScope m_newScope OpenStatement{$$ = new OpenStatement("IF",
+                                                                                                                        dynamic_cast<exp*>($4),
+                                                                                                                        dynamic_cast<ClosedStatement*>($6),
+                                                                                                                        "ELSE",
+                                                                                                                        dynamic_cast<OpenStatement*>($10),
+                                                                                                                        $1->lineNum);}
+		|WHILE m_newScopeWhile LPAREN exp RPAREN OpenStatement{$$ = new OpenStatement("WHILE",
+		                                                                              dynamic_cast<exp*>($4),
+		                                                                              dynamic_cast<OpenStatement*>($6),
+		                                                                              $1->lineNum);};
 
-ClosedStatement:SimpleStatement {$$ = ClosedStatement($1);}
-		|IF m_newScope LPAREN exp RPAREN ClosedStatement ELSE m_newScope ClosedStatement{$$ = ClosedStatement($1.keyWord,$4, $6, $7,$9);}
-		|WHILE m_newScopeWhile LPAREN exp RPAREN ClosedStatement{$$ = ClosedStatement($1.keyWord, $4, $6);};
+ClosedStatement:SimpleStatement {$$ = new ClosedStatement(dynamic_cast<SimpleStatement*>($1));}
+		|IF m_newScope LPAREN exp RPAREN ClosedStatement ELSE m_newScope ClosedStatement{$$ = new ClosedStatement("IF",
+		                                                                                                          dynamic_cast<exp*>($4),
+		                                                                                                          dynamic_cast<ClosedStatement*>($6),
+		                                                                                                          "ELSE",
+		                                                                                                          dynamic_cast<ClosedStatement*>($9),
+		                                                                                                          $1->lineNum);}
+		|WHILE m_newScopeWhile LPAREN exp RPAREN ClosedStatement{$$ = new ClosedStatement("WHILE",
+                                                                                            dynamic_cast<exp*>($4),
+                                                                                            dynamic_cast<ClosedStatement*>($6),$1->lineNum);};
 
-SimpleStatement: LBRACE m_newScope statements RBRACE{$$ =SimpleStatement($3);} //TODO - Maybe we need to perform the m_nesScope() function here
-	|typeAnnotation type ID SC{$$ = SimpleStatement($1,$2,$3.IdStr);}
-	|typeAnnotation type ID ASSIGN exp SC{$$ = SimpleStatement($1,$2,$3.IdStr,$5);}
-	|ID ASSIGN exp SC{$$ = SimpleStatement($1.IdStr, $2, $3);}
-	|call SC{$$ = SimpleStatement($1);}
-	|RETURN SC{$$ = SimpleStatement($1.keyWord);}
-	|RETURN exp SC{$$ = SimpleStatement($2);}
-	|BREAK SC{$$ = SimpleStatement($1.keyWord);}
-	|CONTINUE SC{$$ = SimpleStatement($1.keyWord);};
+SimpleStatement: LBRACE m_newScope statements RBRACE{$$ = new SimpleStatement(dynamic_cast<statements*>($3));} //TODO - Maybe we need to perform the m_nesScope() function here
+	|typeAnnotation type ID SC{$$ = new SimpleStatement(dynamic_cast<typeAnnotation*>($1),
+                                                        dynamic_cast<type*>($2),
+                                                        $3);}
+	|typeAnnotation type ID ASSIGN exp SC{$$ = new SimpleStatement(dynamic_cast<typeAnnotation*>($1),
+                                                                   dynamic_cast<type*>($2),
+                                                                   $3,dynamic_cast<exp*>($5));}
+	|ID ASSIGN exp SC{$$ = new SimpleStatement($1, "ASSIGN", dynamic_cast<exp*>($3));}
+	|call SC{$$ = new SimpleStatement(dynamic_cast<call*>($1));}
+	|RETURN SC{$$ = new SimpleStatement($1);}
+	|RETURN exp SC{$$ = new SimpleStatement($1, dynamic_cast<exp*>($2));}
+	|BREAK SC{$$ = new SimpleStatement($1);}
+	|CONTINUE SC{$$ = new SimpleStatement($1);};
 
-call: ID LPAREN expList RPAREN{$$ = call($1.IdStr,$3);};
-	|ID LPAREN RPAREN{$$ = call($1.IdStr);};
+call: ID LPAREN expList RPAREN{$$ = new call($1, dynamic_cast<expList*>($3));};
+	|ID LPAREN RPAREN{$$ = new call($1);};
 
-expList: exp{$$ = expList($1);};
-	|exp COMMA expList{$$ = expList($1,$3);};
+expList: exp{$$ = new expList(dynamic_cast<exp*>($1));};
+	|exp COMMA expList{$$ = new expList(dynamic_cast<exp*>($1),dynamic_cast<expList*>(3));};
 
-type: INT{$$ = type($1.type);};
-	|BYTE{$$ = type($1.type);};
-	|BOOL{$$ = type($1.type);};
+type: INT{$$ = new type($1.type);};
+	|BYTE{$$ = new type($1.type);};
+	|BOOL{$$ = new type($1.type);};
 
-typeAnnotation: /*epsilon*/{$$ = typeAnnotation();};
-		|CONST{$$ = typeAnnotation($1.annoType);};
+typeAnnotation: /*epsilon*/{$$ = new typeAnnotation();};
+		|CONST{$$ = new typeAnnotation($1.annoType);};
 
 
-exp: LPAREN exp RPAREN{$$ = exp($2);};
-	|exp MULT exp{$$ = exp($1, $2.op, $3);};
-	|exp DIV exp{$$ = exp($1, $2.op, $3);};
-	|exp PLUS exp{$$ = exp($1, $2.op, $3);};
-	|exp MINUS exp{$$ = exp($1, $2.op, $3);};
-	|ID{$$ = exp($1.IdStr,"ID");};
-	|call{$$ = exp($1);};
-	|NUM{$$ = exp($1.val);};
-	|NUM B{$$ = exp($1.val, true);};
-	|STRING{$$ = exp($1.str,"STRING");};
-	|TRUE{$$ = exp($1.val);};
-	|FALSE{$$ = exp($1.val);};
-	|NOT exp{$$ = exp($1.op, $2);};
-	|exp AND exp{$$ = exp($1, $2.op, $3);};
-	|exp OR exp{$$ = exp($1, $2.op, $3);};
-	|exp RELOPNONASSOC exp{$$ = exp($1, $2.op, $3);};
-	|exp RELOPLEFT exp{$$ = exp($1, $2.op, $3);};
-	|LPAREN typeAnnotation type RPAREN exp{$$ = exp($2, $3, $5);};
+exp: LPAREN exp RPAREN{$$ = new exp($2);};
+	|exp MULT exp{$$ = new exp($1, $2.op, $3);};
+	|exp DIV exp{$$ = new exp($1, $2.op, $3);};
+	|exp PLUS exp{$$ = new exp($1, $2.op, $3);};
+	|exp MINUS exp{$$ = new exp($1, $2.op, $3);};
+	|ID{$$ = new exp($1.IdStr,"ID");};
+	|call{$$ = new exp($1);};
+	|NUM{$$ = new exp($1.val);};
+	|NUM B{$$ = new exp($1.val, true);};
+	|STRING{$$ = new exp($1.str,"STRING");};
+	|TRUE{$$ = new exp($1.val);};
+	|FALSE{$$ = new exp($1.val);};
+	|NOT exp{$$ = new exp($1.op, $2);};
+	|exp AND exp{$$ = new exp($1, $2.op, $3);};
+	|exp OR exp{$$ = new exp($1, $2.op, $3);};
+	|exp RELOPNONASSOC exp{$$ = new exp($1, $2.op, $3);};
+	|exp RELOPLEFT exp{$$ = new exp($1, $2.op, $3);};
+	|LPAREN typeAnnotation type RPAREN exp{$$ = new exp($2, $3, $5);};
 
 m_glob: /*epsilon*/     {Semantics::m_glob();};
 
