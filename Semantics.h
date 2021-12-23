@@ -157,7 +157,7 @@ class SimpleStatement : Node {
 	SimpleStatement(statements &statements);
 	SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id);
 	SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp);
-	SimpleStatement(string id, string assign="ASSIGN", exp &exp);
+	SimpleStatement(string id, string assign, exp &exp);
 	SimpleStatement(call &call);
 	SimpleStatement(exp &exp);
 
@@ -165,12 +165,14 @@ class SimpleStatement : Node {
 
 class call : Node {
   public:
+	string rettype;
 	call(string id, expList &expList);
 	call(string id);
 };
 
 class expList : Node {
   public:
+	vector<exp> expVector;
 	expList(exp &exp);
 	expList(exp &exp, expList &expList);
 };

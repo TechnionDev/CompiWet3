@@ -33,11 +33,12 @@ bool symbolTable::contains(string id, vector<string> type) {
 
 void m_glob() {
 	symbolTable new_scope;
-	vector < string > print_vec = ["VOID", "STRING"];
+	vector<string> print_vec = {"VOID", "STRING"};
 	symbolRow print_our("print", 0, print_vec, false, {});
-	vector < string > printi_vec = ["VOID", "INT"];
+	vector<string> printi_vec = {"VOID", "INT"};
 	symbolRow printi_our("printi", 0, printi_vec, false, {});
-	new_scope.symbolTable.push_back(print_our, printi_our)
+	new_scope.symbolTable.push_back(print_our);
+	new_scope.symbolTable.push_back(printi_our);
 	globSymTable.push_back(new_scope);
 	offsetStack.push_back(0);
 	return;
@@ -65,7 +66,7 @@ void m_endScope() {
 }
 
 void end_scope() {
-	endScope();
+	output::endScope();
 	symbolTable table = globSymTable.pop_back();
 	int offset = offsetStack.pop_back();
 	for (auto it: table.symbolTable) {
@@ -82,20 +83,56 @@ void end_scope() {
 	}
 }
 
-bool isIdentifierExists(string id) {
-	//todo:: implement
+symbolRow findSymbolRow(string id) {
+	symbolRow res = symbolRow("", -1, {""}, false, {false});
+	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
+		for (auto itScope = itGlob.symbolTable.rbegin(); itScope != itGlob.symbolTable.rend(); itScope++) {
+			if (itScope.name == id) {
+				res = itScope;
+				return res;
+			}
+		}
+	}
+	return res;
 }
 
-string findIdentifierType(string id){
-	//todo:: implement
+bool isIdentifierExists(string id) {
+	bool res = false;
+	symbolRow check = findSymbolRow(id);
+	if (check.name == id) {
+		res = true;
+	}
+	return res;
 }
-bool isIdentifierConst(string id){
-	//todo:: implement
+
+vector<string> findIdentifierType(string id) {
+	vector<string> types = {};
+	symbolRow identifier = findSymbolRow(id);
+	if (!identifier.name.empty()) {
+		types = identifier.types;
+	}
+	return types;
+}
+
+bool isIdentifierConst(string id) {
+	bool res = false;
+	symbolRow check = findSymbolRow(id);
+	if (check.name == id) {
+		res = check.is_const;
+	}
+	return res;
+}
+
+symbolRow findFunctionRow(string id) {
+	//TODO::implement
+}
+bool isInWhile() {
+	//TODO::implement
 }
 //////////////////////////////////////////////////
 
 program::program() : Node("program") {
-	void end_scope();
+	end_scope;
 	if (!mainExits) {
 		output::errorMainMissing();
 	}
@@ -158,7 +195,7 @@ formals::formals(formalsList &formals) : Node("formals") {
 			}
 		}
 	}
-	i = -1;
+	int i = -1;
 	for (auto it: formals.formalsList) {
 		symbolRow formal(it.id, i, {it.type}, true, {}, false);
 		globSymTable.end()->symbolTable.push_back(formal);
@@ -270,26 +307,37 @@ ClosedStatement::ClosedStatement(string keyWord, exp &exp, ClosedStatement &Clos
 
 SimpleStatement::SimpleStatement(string cmd) : Node("SimpleStatement") {
 	switch (cmd) {
-		case "RETURN":
-
+		case "RETURN": symbolRow func = findFunctionRow();
+			if (func.types[0] != "VOID") {
+				output::errorMismatch(lineno);
+				exit(0);
+			}
 			break;
 		case "BREAK":
+			if (!isInWhile()) {
+				output::errorUnexpectedBreak(lineno);
+				exit(0);
+			}
 			break;
 		case "CONTINUE":
+			if (!isInWhile()) {
+				output::errorUnexpectedContinue(lineno);
+				exit(0);
+			}
 			break;
 	}
 } //return VOID, break, continue
 
 SimpleStatement::SimpleStatement(statements &statements) : Node("SimpleStatement") {
 	end_scope();
-}	//LBRACE m_newScope statements RBRACE
+}    //LBRACE m_newScope statements RBRACE
 
 SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id) : Node("SimpleStatement") {
 	if (isIdentifierExists(id)) {
 		output::errorDef(lineno, id);
-		exit(0)
+		exit(0);
 	}
-	if(typeAnnotation.isConst){
+	if (typeAnnotation.isConst) {
 		output::errorConstDef(lineno);
 		exit(0);
 	}
@@ -303,9 +351,9 @@ SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, str
 	"SimpleStatement") {
 	if (isIdentifierExists(id)) {
 		output::errorDef(lineno, id);
-		exit(0)
+		exit(0);
 	}
-	if(type.typeName != exp.type){
+	if (type.typeName != exp.type) {
 		output::errorMismatch(lineno);
 		exit(0);
 	}
@@ -313,19 +361,23 @@ SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, str
 	offsetStack.end() = pos;
 	symbolRow newIdentifier(id, pos, {type}, typeAnnotation.isConst, {}, false);
 	globSymTable.end()->symbolTable.push_back(newIdentifier);
-}	//typeAnnotation type ID ASSIGN exp SC
+}    //typeAnnotation type ID ASSIGN exp SC
 
-SimpleStatement::SimpleStatement(string id, string assign="ASSIGN", exp &exp) : Node("SimpleStatement") {
+SimpleStatement::SimpleStatement(string id, string assign, exp &exp) : Node("SimpleStatement") {
+	if (assign != "ASSIGN") {
+		output::errorSyn(lineno);
+		exit(0);
+	}
 	if (!isIdentifierExists(id)) {
 		output::errorUndef(lineno, id);
-		exit(0)
+		exit(0);
 	}
-	string idType = findIdentifierType(id);
-	if(idType != exp.type){
+	vector<string> idType = findIdentifierType(id);
+	if (idType.size() != 1 || idType[0] != exp.type) {
 		output::errorMismatch(lineno);
 		exit(0);
 	}
-	if (isIdentifierConst(id)){
+	if (isIdentifierConst(id)) {
 		output::errorConstMismatch(lineno);
 		exit(0);
 	}
@@ -336,8 +388,44 @@ SimpleStatement::SimpleStatement(call &call) : Node("SimpleStatement") {
 }
 
 SimpleStatement::SimpleStatement(exp &exp) : Node("SimpleStatement") {
-
+	symbolRow func = findFunctionRow();
+	if (func.types[0] != exp.type) {
+		output::errorMismatch(lineno);
+		exit(0);
+	}
 }//RETURN exp SC
+
+call::call(string id, expList &expList) : Node("call") {
+	symbolRow funcId = findSymbolRow(id);
+	if (id != funcId.name || !funcId.isFunc) {
+		output::errorUndefFunc(lineno, id);
+		exit(0);
+	}
+	if (funcId.types.size() != expList.expVector.size() + 1) {
+		output::errorPrototypeMismatch(lineno, id, funcId.types);
+		exit(0);
+	}
+	for (int i = 1; i < funcId.types.size(); i++) {
+		if (funcId.types[i] != expList.expVector[i - 1]) {
+			output::errorPrototypeMismatch(lineno, id, funcId.types);
+			exit(0);
+		}
+	}
+	this->rettype = funcId.types[0];
+}
+
+call::call(string id) : Node("call") {
+	symbolRow funcId = findSymbolRow(id);
+	if (id != funcId.name || !funcId.isFunc) {
+		output::errorUndefFunc(lineno, id);
+		exit(0);
+	}
+	if (funcId.types.size() != 1) {
+		output::errorPrototypeMismatch(lineno, id, funcId.types);
+		exit(0);
+	}
+	this->rettype = funcId.types[0];
+}
 
 type::type(string
 		   typeName) {
@@ -356,68 +444,5 @@ typeAnnotation::typeAnnotation(string
 							   annoType) :
 	annoType(annoType) {};
 
-SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id) {
-	//TODO - firs need to check if the id already exist, and than insert it
-	//Check existence to prevent shadowing
-	bool alreadyExist = false;
-	vector<symbolTable>::iterator it = globSymTable.end();
-	for (it; it != globSymTable.begin(); it--) {
-		alreadyExist = it->contains(id, {type.typeName});
-		if (alreadyExist) {
-			break;
-		}
-	}
-	if (!alreadyExist) { //Case the variable not already exist
-		if (typeAnnotation.annoType.empty()) {
-			//Create an insert new symbolRow:
-			vector<string> type_vec = {type.typeName};
-			symbolRow new_var(id, *offsetStack.end(), type_vec);
-			globSymTable.end()->symbolTable.push_back(new_var);
-
-			//Increasing the current offset by 1:
-			int new_offset = *offsetStack.end();
-			offsetStack.pop_back();
-			offsetStack.push_back(new_offset);
-		} else {
-			//In case of const this rule is illegal
-			//TODO: print desired error in case of const
-		}
-	} else {
-		hw3_output::errorDef(yylino, id);
-	}
-}
-
-SimpleStatement::SimpleStatement(typeAnnotation &typeAnnotation, type &type, string id, exp &exp) {
-	//TODO - firs need to check if the id already exist, and than insert it
-	//Check existence to prevent shadowing
-	bool alreadyExist = false;
-	vector<symbolTable>::iterator it = globSymTable.end();
-	for (it; it != globSymTable.begin(); it--) {
-		alreadyExist = it->contains(id, {type.typeName});
-		if (alreadyExist) {
-			break;
-		}
-	}
-	if (!alreadyExist) { //Case the variable not already exist
-		//Create an insert new symbolRow:
-		vector<string> type_vec = {type.typeName};
-		symbolRow new_var(id, *offsetStack.end(), type_vec);
-		globSymTable.end()->symbolTable.push_back(new_var);
-
-		//Increasing the current offset by 1:
-		int new_offset = *offsetStack.end();
-		offsetStack.pop_back();
-		offsetStack.push_back(new_offset);
-	} else {
-		hw3_output::errorDef(yylino, id);
-	}
-}
-
-SimpleStatement::SimpleStatement(string
-								 id,
-								 exp &exp
-) {
-
-}
 
 
