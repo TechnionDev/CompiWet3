@@ -43,10 +43,10 @@
 %right ASSIGN;
 
 %%
-program: m_glob funcs {$$ = new program()};
+program: m_glob funcs {$$ = new program();};
 
-funcs: /*epsilon*/{$$ = new funcs()};|
-        funcDecl funcs {$$ = new funcs()};
+funcs: /*epsilon*/{$$ = new funcs();};|
+        funcDecl funcs {$$ = new funcs();};
 
 funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = new funcsDecl(
                                                                                     dynamic_cast<retType*>($1),
@@ -55,7 +55,7 @@ funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$
                                                                                     dynamic_cast<statements*>($8));
                                                                                     };
 
-retType: type{$$ = new retType(dynamic_cast<type*>($1))};
+retType: type{$$ = new retType(dynamic_cast<type*>($1));};
         |VOID{$$ = new retType($1);};
 
 formals: /*epsilon*/{$$ = new formals();};
@@ -135,7 +135,7 @@ exp: LPAREN exp RPAREN{$$ = new exp(dynamic_cast<exp*>($2));};
 	|exp MINUS exp{$$ = new exp(dynamic_cast<exp*>($1), "MINUS", dynamic_cast<exp*>($3),$2->lineNum);};
 	|ID{$$ = new exp($1,"ID");};
 	|call{$$ = new exp(dynamic_cast<call*>($1));};
-	|NUM{$$ = new exp($1);};
+	|NUM{$$ = new exp($1,false);};
 	|NUM B{$$ = new exp($1, true);};
 	|STRING{$$ = new exp($1,"STRING");};
 	|TRUE{$$ = new exp(true);};
@@ -157,6 +157,7 @@ m_endScope: /*epsilon*/         {m_endScope();};
 %%
 
 void yyerror (const char* err) {
+    std::cout<< "this is yyerror"<<std::endl;
     output::errorSyn(yylineno);
     exit(0);
 }

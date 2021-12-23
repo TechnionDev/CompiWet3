@@ -1,5 +1,7 @@
 #include "Semantics.h"
 #include "hw3_output.hpp"
+#include <iostream>
+
 vector<symbolTable> globSymTable = {};
 vector<int> offsetStack = {};
 bool mainExits = false;
@@ -31,19 +33,8 @@ bool symbolRow::operator==(symbolRow &other) {
 	return (this->name == other.name);// && (this->types == other.types);
 }
 
-bool symbolTable::contains(string id, vector<string> type) {
-	symbolRow dummy;
-	bool res = false;
-	for (auto it = this->SymbolTable.begin(); it != this->SymbolTable.end(); it++) {
-		res = (*it == dummy);
-		if (res) {
-			return res;
-		}
-	}
-	return res;
-}
-
 void m_glob() {
+	cout << "this is m_glob" << endl;
 	symbolTable new_scope;
 	vector<string> print_vec = {"VOID", "STRING"};
 	symbolRow print_our("print", 0, print_vec, false, {}, false);
@@ -57,6 +48,7 @@ void m_glob() {
 }
 
 void m_newScope() {
+	cout << "this is m_newScope" << endl;
 	//Create and insert new scope table
 	symbolTable new_scope;
 	globSymTable.push_back(new_scope);
@@ -65,6 +57,7 @@ void m_newScope() {
 }
 
 void m_newScopeWhile() {
+	cout << "this is m_newScopeWhile" << endl;
 	//Create and insert new scope table
 	symbolTable new_scope;
 	new_scope.isWhileScope = true;
@@ -74,6 +67,7 @@ void m_newScopeWhile() {
 }
 
 void m_endScope() {
+	cout << "this is m_endScope" << endl;
 	end_scope();
 }
 
@@ -161,6 +155,7 @@ bool isInWhile() {
 //////////////////////////////////////////////////
 
 program::program() : Node("program") {
+	cout << "this is program" << endl;
 	end_scope();
 	if (!mainExits) {
 		output::errorMainMissing();
@@ -168,10 +163,12 @@ program::program() : Node("program") {
 }
 
 funcs::funcs() : Node("funcs") {
+	cout << "this is funcs" << endl;
 //todo:: nothing?
 }
 
 funcsDecl::funcsDecl(retType *retType, Node *id, formals *formals, statements *statements) : Node("funcsDecl") {
+	cout << "this is funcsDecl" << endl;
 	if (id->val == "main") {
 		if (mainExits) {
 			output::errorDef(yylineno, id->val);
@@ -200,11 +197,14 @@ funcsDecl::funcsDecl(retType *retType, Node *id, formals *formals, statements *s
 }
 
 retType::retType(type *type) : Node("retType") {
+	cout << "this is retType" << endl;
 	this->typeName = type->typeName;
 }
 
 retType::retType(Node *typeName) : Node("retType") {
-	if (typeName->val != "VOID") {
+	cout << "this is retType" << endl;
+	if (typeName->val != "void") {
+		cout << "this is retType error" << endl;
 		output::errorSyn(typeName->lineNum);
 		exit(0);
 	}
@@ -212,10 +212,12 @@ retType::retType(Node *typeName) : Node("retType") {
 }
 
 formals::formals() : Node("formals") {
+	cout << "this is formals" << endl;
 	this->formalsVector = {};
 }
 
 formals::formals(formalsList *formals) : Node("formals") {
+	cout << "this is formals" << endl;
 	for (auto formal: formals->formalsVector) {
 		for (auto nextFormal: formals->formalsVector) {
 			if ((formal.isConst == nextFormal.isConst) && (formal.id == nextFormal.id)
@@ -233,18 +235,20 @@ formals::formals(formalsList *formals) : Node("formals") {
 		if (it.formalType == "STRING") {
 			this->hasString = true;
 		}
-		symbolRow formal(it.id, i, {it.formalType}, true, {}, false);
-		globSymTable.end()->SymbolTable.push_back(formal);
+		symbolRow formal(it.id, i, {it.formalType}, it.isConst, {}, false);
+		globSymTable.back().SymbolTable.push_back(formal);
 		i--;
 	}
 	this->formalsVector = formals->formalsVector;
 }
 
 formalsList::formalsList(formalsDecl *formalsDecl) : Node("formalsList") {
+	cout << "this is formalsList" << endl;
 	this->formalsVector.push_back(*formalsDecl);
 }
 
 formalsList::formalsList(formalsDecl *formalsDecl, formalsList *formalsList) : Node("formalsList") {
+	cout << "this is formalList" << endl;
 	this->formalsVector.push_back(*formalsDecl);
 	this->formalsVector.insert(this->formalsVector.end(),
 							   formalsList->formalsVector.begin(),
@@ -252,29 +256,35 @@ formalsList::formalsList(formalsDecl *formalsDecl, formalsList *formalsList) : N
 }
 
 formalsDecl::formalsDecl(typeAnnotation *typeAnnotation, type *type, Node *id) : Node("formalsDecl") {
+	cout << "this is formalsDecl" << endl;
 	this->id = id->val;
 	this->formalType = type->typeName;
 	this->isConst = typeAnnotation->isConst;
 }
 
 statements::statements(statement *statement) : Node("statements") {
+	cout << "this is statements" << endl;
 	this->vecStatements.push_back(*statement);
 }
 
 statements::statements(statements *statements, statement *statement) : Node("statements") {
+	cout << "this is statements" << endl;
 	this->vecStatements = statements->vecStatements;
 	this->vecStatements.push_back(*statement);
 }
 
 statement::statement(OpenStatement *OpenStatement) : Node("statement") {
+	cout << "this is statement" << endl;
 	//todo:: nothing?
 }
 
 statement::statement(ClosedStatement *ClosedStatement) : Node("statement") {
+	cout << "this is statement" << endl;
 	//todo:: nothing?
 }
 
 OpenStatement::OpenStatement(string keyWord, exp *exp, statement *statement, int lineNumber) : Node("OpenStatement") {
+	cout << "this is OpenStatement" << endl;
 	if (keyWord != "IF") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -291,6 +301,7 @@ OpenStatement::OpenStatement(string firstKeyWord,
 							 ClosedStatement *ClosedStatement,
 							 string secondKeyWord,
 							 OpenStatement *OpenStatement, int lineNumber) : Node("OpenStatement") {
+	cout << "this is OpenStatement" << endl;
 	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -304,6 +315,7 @@ OpenStatement::OpenStatement(string firstKeyWord,
 
 OpenStatement::OpenStatement(string keyWord, exp *exp, OpenStatement *OpenStatement, int lineNumber) : Node(
 	"OpenStatement") {
+	cout << "this is OpenStatement" << endl;
 	if (keyWord != "WHILE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -316,12 +328,14 @@ OpenStatement::OpenStatement(string keyWord, exp *exp, OpenStatement *OpenStatem
 }
 
 ClosedStatement::ClosedStatement(SimpleStatement *SimpleStatement) : Node("ClosedStatement") {
+	cout << "this is ClosedStatement" << endl;
 	//todo:: nothing?
 }
 
 ClosedStatement::ClosedStatement(string firstKeyWord, exp *exp, ClosedStatement *closed_Statement,
 								 string secondKeyWord, ClosedStatement *closed_Statement2, int lineNumber) : Node(
 	"ClosedStatement") {
+	cout << "this is ClosedStatement" << endl;
 	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -335,6 +349,7 @@ ClosedStatement::ClosedStatement(string firstKeyWord, exp *exp, ClosedStatement 
 
 ClosedStatement::ClosedStatement(string keyWord, exp *exp, ClosedStatement *ClosedStatement, int lineNumber) : Node(
 	"ClosedStatement") {
+	cout << "this is ClosedStatement" << endl;
 	if (keyWord != "WHILE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -347,6 +362,7 @@ ClosedStatement::ClosedStatement(string keyWord, exp *exp, ClosedStatement *Clos
 }
 
 SimpleStatement::SimpleStatement(Node *cmd) : Node("SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	if (cmd->val == "RETURN") {
 		string retFunc = getRetTypeFunc();
 		if (retFunc == "" || retFunc != "VOID") {
@@ -368,10 +384,12 @@ SimpleStatement::SimpleStatement(Node *cmd) : Node("SimpleStatement") {
 //return VOID, break, continue
 
 SimpleStatement::SimpleStatement(statements *statements) : Node("SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	end_scope();
 }    //LBRACE m_newScope statements RBRACE
 
 SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id) : Node("SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	if (isIdentifierExists(id->val)) {
 		output::errorDef(id->lineNum, id->val);
 		exit(0);
@@ -388,6 +406,7 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 
 SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id, exp *exp) : Node(
 	"SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	if (isIdentifierExists(id->val)) {
 		output::errorDef(id->lineNum, id->val);
 		exit(0);
@@ -403,6 +422,7 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 }    //typeAnnotation type ID ASSIGN exp SC
 
 SimpleStatement::SimpleStatement(Node *id, string assign, exp *exp) : Node("SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	if (assign != "ASSIGN") {
 		output::errorSyn(id->lineNum);
 		exit(0);
@@ -423,10 +443,12 @@ SimpleStatement::SimpleStatement(Node *id, string assign, exp *exp) : Node("Simp
 }//ID ASSIGN exp SC
 
 SimpleStatement::SimpleStatement(call *call) : Node("SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	//todo:: nothing?
 }
 
 SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement") {
+	cout << "this is SimpleStatement" << endl;
 	string func = getRetTypeFunc();
 	if (func == "" || func != exp->expType) {
 		output::errorMismatch(node->lineNum);
@@ -435,6 +457,7 @@ SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement")
 }//RETURN exp SC
 
 call::call(Node *id, expList *expList) : Node("call") {
+	cout << "this is call" << endl;
 	symbolRow funcId = findSymbolRow(id->val);
 	if (id->val != funcId.name || !funcId.isFunc) {
 		output::errorUndefFunc(id->lineNum, id->val);
@@ -461,6 +484,7 @@ call::call(Node *id, expList *expList) : Node("call") {
 }
 
 call::call(Node *id) : Node("call") {
+	cout << "this is call" << endl;
 	symbolRow funcId = findSymbolRow(id->val);
 	if (id->val != funcId.name || !funcId.isFunc) {
 		output::errorUndefFunc(id->lineNum, id->val);
@@ -474,20 +498,23 @@ call::call(Node *id) : Node("call") {
 }
 
 expList::expList(exp *exp1) : Node("expList") {
+	cout << "this is expList" << endl;
 	this->expVector.push_back(exp1);
 }
 
 expList::expList(exp *exp1, expList *expList) : Node("expList") {
+	cout << "this is expList" << endl;
 	this->expVector.push_back(*exp1);
 	this->expVector.insert(this->expVector.end(), expList->expVector.begin(), expList->expVector.end());
 }
 
 type::type(Node *typeName) : Node("type") {
-	if (typeName->val == "INT") {
+	cout << "this is type" << endl;
+	if (typeName->val == "int") {
 		this->typeName = "INT";
-	} else if (typeName->val == "BYTE") {
+	} else if (typeName->val == "b") {
 		this->typeName = "BYTE";
-	} else if (typeName->val == "BOOL") {
+	} else if (typeName->val == "bool") {
 		this->typeName = "BOOL";
 	} else {
 		output::errorSyn(typeName->lineNum);
@@ -496,6 +523,7 @@ type::type(Node *typeName) : Node("type") {
 }
 
 typeAnnotation::typeAnnotation(Node *annoType) : Node("typeAnnotation") {
+	cout << "this is typeAnnotation" << endl;
 	if (annoType->val == "") {
 		isConst = false;
 	} else if (annoType->val == "CONST") {
@@ -505,12 +533,19 @@ typeAnnotation::typeAnnotation(Node *annoType) : Node("typeAnnotation") {
 		exit(0);
 	}
 }
-exp::exp() : Node("exp") { this->expType = ""; }
+
+exp::exp() : Node("exp") {
+	cout << "this is exp" << endl;
+	this->expType = "";
+}
+
 exp::exp(exp *exp) : Node("exp") {
+	cout << "this is exp" << endl;
 	this->expType = exp->expType;
 }
 
 exp::exp(exp *firstExp, string op, exp *secExp, int lineNum) : Node("exp") {
+	cout << "this is exp" << endl;
 	if (op == "MULT" || op == "DIV" || op == "PLUS" || op == "MINUS") {
 		if ((firstExp->expType != "INT" && firstExp->expType != "BYTE")
 			|| (secExp->expType != "INT" && secExp->expType != "BYTE")) {
@@ -535,7 +570,9 @@ exp::exp(exp *firstExp, string op, exp *secExp, int lineNum) : Node("exp") {
 }//MULT,DIV,PLUS,MINUS,AND,OR
 
 exp::exp(Node *id, string type) : Node("exp") {
+	cout << "this is exp (Node *id, string type)" << endl;
 	if (type == "ID") {
+		cout << "this is exp ID (Node *id, string type)" << endl;
 		symbolRow res = findSymbolRow(id->val);
 		if (res.name != id->val) {
 			output::errorUndef(id->lineNum, id->val);
@@ -547,16 +584,21 @@ exp::exp(Node *id, string type) : Node("exp") {
 		}
 		this->expType = res.types[0];
 	} else if (type == "STRING") {
+		cout << "this is exp STRING (Node *id, string type)" << endl;
 		this->expType = "STRING";
 	}
+	cout << "this is END exp (Node *id, string type)" << endl;
 
 } //ID,STRING
 
 exp::exp(call *call) : Node("exp") {
+	cout << "this is exp" << endl;
 	this->expType = call->rettype;
 }//call
 
 exp::exp(Node *val, bool isB) : Node("exp") {
+	cout << "this is exp (Node *val, bool isB)" << endl;
+	cout << "this is the val: " + val->val << endl;
 	if (isB) {
 		if (stoi(val->val) > 255) {
 			string value = val->val;
@@ -570,10 +612,12 @@ exp::exp(Node *val, bool isB) : Node("exp") {
 }//INT,BYTE
 
 exp::exp(bool val) : Node("exp") {
+	cout << "this is exp" << endl;
 	this->expType = "BOOL";
 }
 
 exp::exp(string op, exp *exp, int lineNum) : Node("exp") {
+	cout << "this is exp" << endl;
 	if (exp->expType != "BOOL") {
 		output::errorMismatch(lineNum);
 		exit(0);
@@ -581,7 +625,8 @@ exp::exp(string op, exp *exp, int lineNum) : Node("exp") {
 	this->expType = "BOOL";
 }
 
-exp::exp(typeAnnotation *typeAnnotation,  type *type,  exp *exp, int lineNum) : Node("exp") {
+exp::exp(typeAnnotation *typeAnnotation, type *type, exp *exp, int lineNum) : Node("exp") {
+	cout << "this is exp" << endl;
 	if ((type->typeName != "INT" && type->typeName != "BYTE") || (exp->expType != "INT" && exp->expType != "BYTE")) {
 		output::errorMismatch(lineNum);
 		exit(0);

@@ -205,7 +205,7 @@ class exp : public Node {
 	exp(exp *firstExp, string op, exp *secExp, int lineNum);
 	exp(Node *id, string type);
 	exp(call *call);
-	exp(Node *val, bool isB = false);
+	exp(Node *val, bool isB);
 	exp(bool val);
 	exp(string op, exp *exp, int lineNum);
 	exp(typeAnnotation *typeAnnotation, type *type, exp *exp, int lineNum);
