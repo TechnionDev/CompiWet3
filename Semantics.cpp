@@ -271,6 +271,7 @@ ClosedStatement::ClosedStatement(string keyWord, exp &exp, ClosedStatement &Clos
 SimpleStatement::SimpleStatement(string cmd) : Node("SimpleStatement") {
 	switch (cmd) {
 		case "RETURN":
+
 			break;
 		case "BREAK":
 			break;
