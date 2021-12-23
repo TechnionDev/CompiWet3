@@ -25,13 +25,13 @@ class typeAnnotation;
 class exp;
 
 extern int yylineno;
-bool mainExits = false;
+
 
 class Node {
   public:
 	string val = "";
 	int lineNum = 0;
-	Node();
+	Node() = default;
 	Node(string val, int lineNumber = -1) : val(val), lineNum(lineNumber) {};
 	virtual ~Node() = default;
 
@@ -51,14 +51,14 @@ class symbolRow {
 			  bool is_const,
 			  vector<bool> constFormals,
 			  bool isFunc = false);
-	symbolRow();
+	symbolRow() = default;
 	symbolRow(const symbolRow &row);
 	bool operator==(symbolRow &other);
 };
 
 class symbolTable {
   public:
-	symbolTable();
+	symbolTable() = default;
 	vector<symbolRow> SymbolTable;
 	bool isWhileScope = false;
 	bool contains(string id, vector<string> type);
@@ -193,7 +193,7 @@ class type : public Node {
 class typeAnnotation : public Node {
   public:
 	bool isConst= false;
-	typeAnnotation();
+	typeAnnotation() = default;
 	typeAnnotation(Node *annoType);
 };
 

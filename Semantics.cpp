@@ -2,6 +2,7 @@
 #include "hw3_output.hpp"
 vector<symbolTable> globSymTable = {};
 vector<int> offsetStack = {};
+bool mainExits = false;
 symbolRow::symbolRow(string name,
 					 int pos,
 					 vector<string> types,
