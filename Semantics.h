@@ -160,54 +160,55 @@ class ClosedStatement : public Node {
 
 class SimpleStatement : public Node {
   public:
-	SimpleStatement(Node* cmd); //return, break, continue
+	SimpleStatement(Node *cmd); //return, break, continue
 	SimpleStatement(statements *statements);
 	SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id);
 	SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id, exp *exp);
-	SimpleStatement(Node* id, string assign, exp *exp);
+	SimpleStatement(Node *id, string assign, exp *exp);
 	SimpleStatement(call *call);
-	SimpleStatement(Node* node,exp *exp);
+	SimpleStatement(Node *node, exp *exp);
 
 };
 
 class call : public Node {
   public:
 	string rettype;
-	call(Node* id, expList *expList);
-	call(Node* id);
+	call(Node *id, expList *expList);
+	call(Node *id);
 };
 
 class expList : public Node {
   public:
 	vector<exp> expVector;
-	expList( exp *exp1);
-	expList( exp *exp1, expList *expList);
+	expList(exp *exp1);
+	expList(exp *exp1, expList *expList);
 };
 
 class type : public Node {
   public:
 	string typeName;
-	type(string typeName);
+	type(Node *typeName);
 };
 
 class typeAnnotation : public Node {
   public:
-	bool isConst;
-	typeAnnotation(string annoType = "");
+	bool isConst= false;
+	typeAnnotation();
+	typeAnnotation(Node *annoType);
 };
 
 class exp : public Node {
   public:
 	string expType;
 	exp();
-	exp(const exp &exp);
-	exp(const exp &firstExp, string op, const exp &secExp);
-	exp(string id, string type);
-	exp(const call &call);
-	exp(int val, bool isB = false);
+	exp(exp *exp);
+	exp(exp *firstExp, string op, exp *secExp, int lineNum);
+	exp(Node *id, string type);
+	exp(call *call);
+	exp(Node *val, bool isB = false);
 	exp(bool val);
-	exp(string op, const exp &exp);
-	exp(const typeAnnotation &typeAnnotation, const type &type, const exp &exp);
+	exp(string op, exp *exp, int lineNum);
+	exp(typeAnnotation *typeAnnotation, type *type, exp *exp, int lineNum);
 };
 
 #endif //COMPIWET3__SEMANTICS_H_

@@ -301,7 +301,8 @@ OpenStatement::OpenStatement(string firstKeyWord,
 	end_scope();
 }
 
-OpenStatement::OpenStatement(string keyWord, exp *exp, OpenStatement *OpenStatement, int lineNumber) : Node("OpenStatement") {
+OpenStatement::OpenStatement(string keyWord, exp *exp, OpenStatement *OpenStatement, int lineNumber) : Node(
+	"OpenStatement") {
 	if (keyWord != "WHILE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -318,7 +319,8 @@ ClosedStatement::ClosedStatement(SimpleStatement *SimpleStatement) : Node("Close
 }
 
 ClosedStatement::ClosedStatement(string firstKeyWord, exp *exp, ClosedStatement *closed_Statement,
-								 string secondKeyWord, ClosedStatement *closed_Statement2, int lineNumber) : Node("ClosedStatement") {
+								 string secondKeyWord, ClosedStatement *closed_Statement2, int lineNumber) : Node(
+	"ClosedStatement") {
 	if (firstKeyWord != "IF" || secondKeyWord != "ELSE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -330,7 +332,8 @@ ClosedStatement::ClosedStatement(string firstKeyWord, exp *exp, ClosedStatement 
 	end_scope();
 }
 
-ClosedStatement::ClosedStatement(string keyWord, exp *exp, ClosedStatement *ClosedStatement, int lineNumber) : Node("ClosedStatement") {
+ClosedStatement::ClosedStatement(string keyWord, exp *exp, ClosedStatement *ClosedStatement, int lineNumber) : Node(
+	"ClosedStatement") {
 	if (keyWord != "WHILE") {
 		output::errorSyn(lineNumber);
 		exit(0);
@@ -342,7 +345,7 @@ ClosedStatement::ClosedStatement(string keyWord, exp *exp, ClosedStatement *Clos
 	end_scope();
 }
 
-SimpleStatement::SimpleStatement(Node* cmd) : Node("SimpleStatement") {
+SimpleStatement::SimpleStatement(Node *cmd) : Node("SimpleStatement") {
 	if (cmd->val == "RETURN") {
 		string retFunc = getRetTypeFunc();
 		if (retFunc == "" || retFunc != "VOID") {
@@ -367,7 +370,7 @@ SimpleStatement::SimpleStatement(statements *statements) : Node("SimpleStatement
 	end_scope();
 }    //LBRACE m_newScope statements RBRACE
 
-SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node* id) : Node("SimpleStatement") {
+SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id) : Node("SimpleStatement") {
 	if (isIdentifierExists(id->val)) {
 		output::errorDef(id->lineNum, id->val);
 		exit(0);
@@ -382,7 +385,7 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 	globSymTable.end()->SymbolTable.push_back(newIdentifier);
 } //typeAnnotation type ID SC
 
-SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node* id, exp *exp) : Node(
+SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id, exp *exp) : Node(
 	"SimpleStatement") {
 	if (isIdentifierExists(id->val)) {
 		output::errorDef(id->lineNum, id->val);
@@ -398,7 +401,7 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 	globSymTable.end()->SymbolTable.push_back(newIdentifier);
 }    //typeAnnotation type ID ASSIGN exp SC
 
-SimpleStatement::SimpleStatement(Node* id, string assign, exp *exp) : Node("SimpleStatement") {
+SimpleStatement::SimpleStatement(Node *id, string assign, exp *exp) : Node("SimpleStatement") {
 	if (assign != "ASSIGN") {
 		output::errorSyn(id->lineNum);
 		exit(0);
@@ -422,7 +425,7 @@ SimpleStatement::SimpleStatement(call *call) : Node("SimpleStatement") {
 	//todo:: nothing?
 }
 
-SimpleStatement::SimpleStatement(Node* node, exp *exp) : Node("SimpleStatement") {
+SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement") {
 	string func = getRetTypeFunc();
 	if (func == "" || func != exp->expType) {
 		output::errorMismatch(node->lineNum);
@@ -430,7 +433,7 @@ SimpleStatement::SimpleStatement(Node* node, exp *exp) : Node("SimpleStatement")
 	}
 }//RETURN exp SC
 
-call::call(Node* id, expList *expList) : Node("call") {
+call::call(Node *id, expList *expList) : Node("call") {
 	symbolRow funcId = findSymbolRow(id->val);
 	if (id->val != funcId.name || !funcId.isFunc) {
 		output::errorUndefFunc(id->lineNum, id->val);
@@ -456,7 +459,7 @@ call::call(Node* id, expList *expList) : Node("call") {
 	this->rettype = funcId.types[0];
 }
 
-call::call(Node* id) : Node("call") {
+call::call(Node *id) : Node("call") {
 	symbolRow funcId = findSymbolRow(id->val);
 	if (id->val != funcId.name || !funcId.isFunc) {
 		output::errorUndefFunc(id->lineNum, id->val);
@@ -469,76 +472,76 @@ call::call(Node* id) : Node("call") {
 	this->rettype = funcId.types[0];
 }
 
-expList::expList( exp *exp1) : Node("expList") {
+expList::expList(exp *exp1) : Node("expList") {
 	this->expVector.push_back(exp1);
 }
 
-expList::expList( exp *exp1,  expList *expList) : Node("expList") {
+expList::expList(exp *exp1, expList *expList) : Node("expList") {
 	this->expVector.push_back(*exp1);
 	this->expVector.insert(this->expVector.end(), expList->expVector.begin(), expList->expVector.end());
 }
 
-type::type(string typeName) : Node("type") {
-	if (typeName == "INT") {
-		typeName = "INT";
-	} else if (typeName == "BYTE") {
-		typeName = "BYTE";
-	} else if (typeName == "BOOL") {
-		typeName = "BOOL";
+type::type(Node *typeName) : Node("type") {
+	if (typeName->val == "INT") {
+		this->typeName = "INT";
+	} else if (typeName->val == "BYTE") {
+		this->typeName = "BYTE";
+	} else if (typeName->val == "BOOL") {
+		this->typeName = "BOOL";
 	} else {
-		output::errorSyn(yylineno);
+		output::errorSyn(typeName->lineNum);
 		exit(0);
 	}
 }
 
-typeAnnotation::typeAnnotation(string annoType) : Node("typeAnnotation") {
-	if (annoType == "") {
+typeAnnotation::typeAnnotation(Node *annoType) : Node("typeAnnotation") {
+	if (annoType->val == "") {
 		isConst = false;
-	} else if (annoType == "CONST") {
+	} else if (annoType->val == "CONST") {
 		isConst = true;
 	} else {
-		output::errorSyn(yylineno);
+		output::errorSyn(annoType->lineNum);
 		exit(0);
 	}
 }
 exp::exp() : Node("exp") { this->expType = ""; }
-exp::exp(const exp &exp) : Node("exp") {
-	this->expType = exp.expType;
+exp::exp(exp *exp) : Node("exp") {
+	this->expType = exp->expType;
 }
 
-exp::exp(const exp &firstExp, string op, const exp &secExp) : Node("exp") {
+exp::exp(exp *firstExp, string op, exp *secExp, int lineNum) : Node("exp") {
 	if (op == "MULT" || op == "DIV" || op == "PLUS" || op == "MINUS") {
-		if ((firstExp.expType != "INT" && firstExp.expType != "BYTE")
-			|| (secExp.expType != "INT" && secExp.expType != "BYTE")) {
-			output::errorMismatch(yylineno);
+		if ((firstExp->expType != "INT" && firstExp->expType != "BYTE")
+			|| (secExp->expType != "INT" && secExp->expType != "BYTE")) {
+			output::errorMismatch(lineNum);
 			exit(0);
 		}
-		if (firstExp.expType == "INT" || secExp.expType == "INT") {
+		if (firstExp->expType == "INT" || secExp->expType == "INT") {
 			this->expType = "INT";
 		} else {
 			this->expType = "BYTE";
 		}
 	} else if (op == "AND" || op == "OR" || op == "RELOPLEFT" || op == "RELOPNONASSOC") {
-		if ((firstExp.expType != "BOOL") || (secExp.expType != "BOOL")) {
-			output::errorMismatch(yylineno);
+		if ((firstExp->expType != "BOOL") || (secExp->expType != "BOOL")) {
+			output::errorMismatch(lineNum);
 			exit(0);
 		}
 		this->expType = "BOOL";
 	} else {
-		output::errorSyn(yylineno);
+		output::errorSyn(lineNum);
 		exit(0);
 	}
 }//MULT,DIV,PLUS,MINUS,AND,OR
 
-exp::exp(string id, string type) : Node("exp") {
+exp::exp(Node *id, string type) : Node("exp") {
 	if (type == "ID") {
-		symbolRow res = findSymbolRow(id);
-		if (res.name != id) {
-			output::errorUndef(yylineno, id);
+		symbolRow res = findSymbolRow(id->val);
+		if (res.name != id->val) {
+			output::errorUndef(id->lineNum, id->val);
 			exit(0);
 		}
 		if (res.isFunc) {
-			output::errorUndef(yylineno, id);
+			output::errorUndef(id->lineNum, id->val);
 			exit(0);
 		}
 		this->expType = res.types[0];
@@ -548,15 +551,15 @@ exp::exp(string id, string type) : Node("exp") {
 
 } //ID,STRING
 
-exp::exp(const call &call) : Node("exp") {
-	this->expType = call.rettype;
+exp::exp(call *call) : Node("exp") {
+	this->expType = call->rettype;
 }//call
 
-exp::exp(int val, bool isB) : Node("exp") {
+exp::exp(Node *val, bool isB) : Node("exp") {
 	if (isB) {
-		if (val > 255) {
-			string value = std::to_string(val);
-			output::errorByteTooLarge(yylineno, value);
+		if (stoi(val->val) > 255) {
+			string value = val->val;
+			output::errorByteTooLarge(val->lineNum, val->val);
 			exit(0);
 		}
 		this->expType = "BYTE";
@@ -569,18 +572,18 @@ exp::exp(bool val) : Node("exp") {
 	this->expType = "BOOL";
 }
 
-exp::exp(string op, const exp &exp) : Node("exp") {
-	if (exp.expType != "BOOL") {
-		output::errorMismatch(yylineno);
+exp::exp(string op, exp *exp, int lineNum) : Node("exp") {
+	if (exp->expType != "BOOL") {
+		output::errorMismatch(lineNum);
 		exit(0);
 	}
 	this->expType = "BOOL";
 }
 
-exp::exp(const typeAnnotation &typeAnnotation, const type &type, const exp &exp) : Node("exp") {
-	if ((type.typeName != "INT" && type.typeName != "BYTE") || (exp.expType != "INT" && exp.expType != "BYTE")) {
-		output::errorMismatch(yylineno);
+exp::exp(typeAnnotation *typeAnnotation,  type *type,  exp *exp, int lineNum) : Node("exp") {
+	if ((type->typeName != "INT" && type->typeName != "BYTE") || (exp->expType != "INT" && exp->expType != "BYTE")) {
+		output::errorMismatch(lineNum);
 		exit(0);
 	}
-	this->expType = type.typeName;
+	this->expType = type->typeName;
 }
