@@ -97,6 +97,7 @@ class retType : Node {
 class formals : Node {
   public:
 	vector<formalsDecl> formalsList;
+	bool hasString = false;
 	formals();
 	formals(formalsList &formalsList);
 };
