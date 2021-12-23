@@ -4,6 +4,7 @@
 #include "Semantics.h"
 #include "hw3_output.hpp"
 #include "parser.tab.hpp"
+#include <iostream>
 
 %}
 
@@ -16,7 +17,7 @@ string  (\"([^\n\r\"\\]|\\[rnt"\\])+\")
 void                        yylval = new Node(yytext, yylineno);return VOID;
 int                         yylval = new Node(yytext, yylineno);return INT;
 byte                        yylval = new Node(yytext, yylineno);return BYTE;
-b                           yylval = new Node(yytext, yylineno);return B;
+b                           yylval = new Node(yytext, yylineno);std::cout<<yytext<<std::endl;return B;
 bool                        yylval = new Node(yytext, yylineno);return BOOL;
 const                       yylval = new Node(yytext, yylineno);return CONST;
 and                         yylval = new Node(yytext, yylineno);return AND;
@@ -43,8 +44,8 @@ continue                    yylval = new Node(yytext, yylineno);return CONTINUE;
 "-"                         yylval = new Node(yytext, yylineno);return MINUS;
 "/"                         yylval = new Node(yytext, yylineno);return DIV;
 "*"                         yylval = new Node(yytext, yylineno);return MULT;
-0|[1-9][0-9]*               yylval = new Node(yytext, yylineno);return NUM;
-[a-zA-Z][0-9a-zA-Z]*        yylval = new Node(yytext, yylineno);return ID;
+0|[1-9][0-9]*               yylval = new Node(yytext, yylineno);std::cout<<yytext<<std::endl;return NUM;
+[a-zA-Z][0-9a-zA-Z]*        yylval = new Node(yytext, yylineno);std::cout<<yytext<<std::endl;return ID;
 {string}                    yylval = new Node(yytext, yylineno);return STRING;
 \/\/[^\r\n]*[\r|\n|\r\n]?   {};
 {whitespace}				{};

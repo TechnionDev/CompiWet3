@@ -8,7 +8,7 @@ class Node;
 class symbolTable;
 class program;
 class funcs;
-class funcsDecl;
+class funcDecl;
 class retType;
 class formals;
 class formalsList;
@@ -87,9 +87,9 @@ class funcs : public Node {
 	funcs();
 };
 
-class funcsDecl : public Node {
+class funcDecl : public Node {
   public:
-	funcsDecl(retType *retType, Node *id, formals *formals, statements *statements);
+	funcDecl(retType *retType, Node *id, formals *formals, statements *statements);
 };
 
 class retType : public Node {
@@ -205,7 +205,7 @@ class exp : public Node {
 	exp(exp *firstExp, string op, exp *secExp, int lineNum);
 	exp(Node *id, string type);
 	exp(call *call);
-	exp(Node *val, bool isB);
+	exp(Node *val,int dontUseIT, bool isB);
 	exp(bool val);
 	exp(string op, exp *exp, int lineNum);
 	exp(typeAnnotation *typeAnnotation, type *type, exp *exp, int lineNum);

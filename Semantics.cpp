@@ -37,9 +37,9 @@ void m_glob() {
 	cout << "this is m_glob" << endl;
 	symbolTable new_scope;
 	vector<string> print_vec = {"VOID", "STRING"};
-	symbolRow print_our("print", 0, print_vec, false, {}, false);
+	symbolRow print_our("print", 0, print_vec, false, {}, true);
 	vector<string> printi_vec = {"VOID", "INT"};
-	symbolRow printi_our("printi", 0, printi_vec, false, {}, false);
+	symbolRow printi_our("printi", 0, printi_vec, false, {}, true);
 	new_scope.SymbolTable.push_back(print_our);
 	new_scope.SymbolTable.push_back(printi_our);
 	globSymTable.push_back(new_scope);
@@ -53,7 +53,7 @@ void m_newScope() {
 	symbolTable new_scope;
 	globSymTable.push_back(new_scope);
 	//Copy the last offset and insert as new offset on top of the stack
-	offsetStack.push_back(*offsetStack.end());
+	offsetStack.push_back(offsetStack.back());
 }
 
 void m_newScopeWhile() {
@@ -63,7 +63,7 @@ void m_newScopeWhile() {
 	new_scope.isWhileScope = true;
 	globSymTable.push_back(new_scope);
 	//Copy the last offset and insert as new offset on top of the stack
-	offsetStack.push_back(*offsetStack.end());
+	offsetStack.push_back(offsetStack.back());
 }
 
 void m_endScope() {
@@ -92,6 +92,7 @@ void end_scope() {
 }
 
 symbolRow findSymbolRow(string id) {
+	cout << "=====this is the size of globSymTable: " + to_string(globSymTable.size()) + "======="<< endl;
 	symbolRow res = symbolRow("", -1, {""}, false, {false});
 	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
 		for (auto itScope = itGlob->SymbolTable.rbegin(); itScope != itGlob->SymbolTable.rend(); itScope++) {
@@ -167,8 +168,8 @@ funcs::funcs() : Node("funcs") {
 //todo:: nothing?
 }
 
-funcsDecl::funcsDecl(retType *retType, Node *id, formals *formals, statements *statements) : Node("funcsDecl") {
-	cout << "this is funcsDecl" << endl;
+funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *statements) : Node("funcDecl") {
+	cout << "this is funcDecl" << endl;
 	if (id->val == "main") {
 		if (mainExits) {
 			output::errorDef(yylineno, id->val);
@@ -191,8 +192,11 @@ funcsDecl::funcsDecl(retType *retType, Node *id, formals *formals, statements *s
 		funcTypes.push_back(formal.formalType);
 		funcConstTypes.push_back(formal.isConst);
 	}
+	cout << "===== we are in funcDecl. and this is the size of globSymTable: " + to_string(globSymTable.size()) + "======="<< endl;
 	symbolRow symbol_row(id->val, 0, funcTypes, false, funcConstTypes, true);
-	globSymTable.end()->SymbolTable.push_back(symbol_row);
+	globSymTable[0].SymbolTable.push_back(symbol_row);
+	globSymTable.back().SymbolTable.push_back(symbol_row);
+
 	end_scope();
 }
 
@@ -398,10 +402,10 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 		output::errorConstDef(id->lineNum);
 		exit(0);
 	}
-	int pos = *offsetStack.end() + 1;
-	*offsetStack.end() = pos;
+	int pos = offsetStack.back();
+	offsetStack.back() = pos + 1;
 	symbolRow newIdentifier(id->val, pos, {type->typeName}, typeAnnotation->isConst, {}, false);
-	globSymTable.end()->SymbolTable.push_back(newIdentifier);
+	globSymTable.back().SymbolTable.push_back(newIdentifier);
 } //typeAnnotation type ID SC
 
 SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Node *id, exp *exp) : Node(
@@ -415,10 +419,13 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 		output::errorMismatch(id->lineNum);
 		exit(0);
 	}
-	int pos = *offsetStack.end() + 1;
-	*offsetStack.end() = pos;
+	int pos = offsetStack.back();
+	offsetStack.back() = pos + 1;
+	cout << "this is the pos: " + to_string(offsetStack.back() - 1) << endl;
 	symbolRow newIdentifier(id->val, pos, {type->typeName}, typeAnnotation->isConst, {}, false);
-	globSymTable.end()->SymbolTable.push_back(newIdentifier);
+	globSymTable.back().SymbolTable.push_back(newIdentifier);
+	cout << "this is the name in the last row of the symTable: " + globSymTable.back().SymbolTable.back().name << endl;
+
 }    //typeAnnotation type ID ASSIGN exp SC
 
 SimpleStatement::SimpleStatement(Node *id, string assign, exp *exp) : Node("SimpleStatement") {
@@ -457,8 +464,13 @@ SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement")
 }//RETURN exp SC
 
 call::call(Node *id, expList *expList) : Node("call") {
-	cout << "this is call" << endl;
+	cout << "this is call (Node *id, expList *expList)" << endl;
 	symbolRow funcId = findSymbolRow(id->val);
+	cout << "this is the func found name: " + funcId.name << endl;
+	cout << "this is the id->val: " + id->val << endl;
+	if (!funcId.isFunc) {
+		cout << "funcId.isFunc is false" << endl;
+	}
 	if (id->val != funcId.name || !funcId.isFunc) {
 		output::errorUndefFunc(id->lineNum, id->val);
 		exit(0);
@@ -510,13 +522,15 @@ expList::expList(exp *exp1, expList *expList) : Node("expList") {
 
 type::type(Node *typeName) : Node("type") {
 	cout << "this is type" << endl;
+	cout << "this is the typeName->val: " + typeName->val << endl;
 	if (typeName->val == "int") {
 		this->typeName = "INT";
-	} else if (typeName->val == "b") {
+	} else if (typeName->val == "byte") {
 		this->typeName = "BYTE";
 	} else if (typeName->val == "bool") {
 		this->typeName = "BOOL";
 	} else {
+		cout << "this is type error" << endl;
 		output::errorSyn(typeName->lineNum);
 		exit(0);
 	}
@@ -557,8 +571,19 @@ exp::exp(exp *firstExp, string op, exp *secExp, int lineNum) : Node("exp") {
 		} else {
 			this->expType = "BYTE";
 		}
-	} else if (op == "AND" || op == "OR" || op == "RELOPLEFT" || op == "RELOPNONASSOC") {
+	} else if (op == "AND" || op == "OR") {
+		cout << "im now in relOP" << endl;
+		cout << "this is firstExp->expType " + firstExp->expType << endl;
+		cout << "this is secExp->expType " + secExp->expType << endl;
+
 		if ((firstExp->expType != "BOOL") || (secExp->expType != "BOOL")) {
+			output::errorMismatch(lineNum);
+			exit(0);
+		}
+		this->expType = "BOOL";
+	} else if (op == "RELOPLEFT" || op == "RELOPNONASSOC") {
+		if ((firstExp->expType != "INT" && firstExp->expType != "BYTE")
+			|| (secExp->expType != "INT" && secExp->expType != "BYTE")) {
 			output::errorMismatch(lineNum);
 			exit(0);
 		}
@@ -574,11 +599,15 @@ exp::exp(Node *id, string type) : Node("exp") {
 	if (type == "ID") {
 		cout << "this is exp ID (Node *id, string type)" << endl;
 		symbolRow res = findSymbolRow(id->val);
+		cout << "this is res.name: " + res.name << endl;
+		cout << "this is id->val: " + id->val << endl;
+
 		if (res.name != id->val) {
 			output::errorUndef(id->lineNum, id->val);
 			exit(0);
 		}
 		if (res.isFunc) {
+			cout << "res.isFunc is true" << endl;
 			output::errorUndef(id->lineNum, id->val);
 			exit(0);
 		}
@@ -596,7 +625,7 @@ exp::exp(call *call) : Node("exp") {
 	this->expType = call->rettype;
 }//call
 
-exp::exp(Node *val, bool isB) : Node("exp") {
+exp::exp(Node *val, int dontUseIT, bool isB) : Node("exp") {
 	cout << "this is exp (Node *val, bool isB)" << endl;
 	cout << "this is the val: " + val->val << endl;
 	if (isB) {
