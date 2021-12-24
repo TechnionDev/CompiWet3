@@ -78,7 +78,7 @@ void end_scope() {
 	int offset = offsetStack.back();
 	offsetStack.pop_back();
 	for (auto it: table.SymbolTable) {
-		if (it.types.size() == 1) {
+		if (!it.isFunc) {
 			//ID
 			output::printID(it.name, it.pos, it.types[0]);
 		} else {
@@ -92,7 +92,7 @@ void end_scope() {
 }
 
 symbolRow findSymbolRow(string id) {
-	cout << "=====this is the size of globSymTable: " + to_string(globSymTable.size()) + "======="<< endl;
+	cout << "=====this is the size of globSymTable: " + to_string(globSymTable.size()) + "=======" << endl;
 	symbolRow res = symbolRow("", -1, {""}, false, {false});
 	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
 		for (auto itScope = itGlob->SymbolTable.rbegin(); itScope != itGlob->SymbolTable.rend(); itScope++) {
@@ -157,10 +157,17 @@ bool isInWhile() {
 
 program::program() : Node("program") {
 	cout << "this is program" << endl;
-	end_scope();
 	if (!mainExits) {
 		output::errorMainMissing();
 	}
+	cout << "this is main" + globSymTable[0].SymbolTable[3].name << endl;
+	if (globSymTable[0].SymbolTable[3].isFunc){
+		cout << "main is func" << endl;
+	} else{
+		cout << "main is not func" << endl;
+	}
+	cout << "this is the size of the size of main: " + to_string(globSymTable[0].SymbolTable[3].types.size()) << endl;
+	end_scope();
 }
 
 funcs::funcs() : Node("funcs") {
@@ -192,7 +199,8 @@ funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *sta
 		funcTypes.push_back(formal.formalType);
 		funcConstTypes.push_back(formal.isConst);
 	}
-	cout << "===== we are in funcDecl. and this is the size of globSymTable: " + to_string(globSymTable.size()) + "======="<< endl;
+	cout << "===== we are in funcDecl. and this is the size of globSymTable: " + to_string(globSymTable.size())
+		+ "=======" << endl;
 	symbolRow symbol_row(id->val, 0, funcTypes, false, funcConstTypes, true);
 	globSymTable[0].SymbolTable.push_back(symbol_row);
 

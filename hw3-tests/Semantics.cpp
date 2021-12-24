@@ -74,7 +74,7 @@ void end_scope() {
 	int offset = offsetStack.back();
 	offsetStack.pop_back();
 	for (auto it: table.SymbolTable) {
-		if (it.types.size() == 1) {
+		if (!it.isFunc) {
 			//ID
 			output::printID(it.name, it.pos, it.types[0]);
 		} else {
