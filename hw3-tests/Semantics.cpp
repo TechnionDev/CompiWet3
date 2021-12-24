@@ -159,7 +159,11 @@ funcs::funcs() : Node("funcs") {
 funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *statements) : Node("funcDecl") {
 	if (id->val == "main") {
 		if (mainExits) {
-			output::errorDef(yylineno, id->val);
+			output::errorDef(id->lineNum, id->val);
+			exit(0);
+		}
+		if (retType->typeName != "VOID" || formals->formalsVector.size() != 0){
+			output::errorMismatch(id->lineNum);
 			exit(0);
 		}
 		mainExits = true;
@@ -341,18 +345,18 @@ ClosedStatement::ClosedStatement(string keyWord, exp *exp, ClosedStatement *Clos
 }
 
 SimpleStatement::SimpleStatement(Node *cmd) : Node("SimpleStatement") {
-	if (cmd->val == "RETURN") {
+	if (cmd->val == "return") {
 		string retFunc = getRetTypeFunc();
 		if (retFunc == "" || retFunc != "VOID") {
 			output::errorMismatch(cmd->lineNum);
 			exit(0);
 		}
-	} else if (cmd->val == "BREAK") {
+	} else if (cmd->val == "break") {
 		if (!isInWhile()) {
 			output::errorUnexpectedBreak(cmd->lineNum);
 			exit(0);
 		}
-	} else if (cmd->val == "CONTINUE") {
+	} else if (cmd->val == "continue") {
 		if (!isInWhile()) {
 			output::errorUnexpectedContinue(cmd->lineNum);
 			exit(0);
@@ -387,9 +391,9 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 		exit(0);
 	}
 	if (type->typeName != exp->expType) {
-		if (type->typeName == "INT" && exp->expType == "BYTE"){
+		if (type->typeName == "INT" && exp->expType == "BYTE") {
 
-		} else{
+		} else {
 			output::errorMismatch(id->lineNum);
 			exit(0);
 		}
@@ -436,18 +440,14 @@ SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement")
 call::call(Node *id, expList *expList) : Node("call") {
 	if (id->val == curFuncName) {
 		if (curFuncFormals.size() != expList->expVector.size() + 1) {
-			output::errorPrototypeMismatch(yylineno, id->val, curFuncFormals);
+			output::errorPrototypeMismatch(id->lineNum, id->val, curFuncFormals);
 			exit(0);
 		}
 		for (int i = 1; i < curFuncFormals.size(); i++) {
 			if (curFuncFormals[i] != expList->expVector[i - 1].expType) {
-				if (id->val == "printi") {
-					if (expList->expVector[i - 1].expType != "BYTE") {
-						output::errorPrototypeMismatch(yylineno, id->val, curFuncFormals);
-						exit(0);
-					}
+				if (expList->expVector[i - 1].expType == "BYTE" && curFuncFormals[i] == "INT") {
 				} else {
-					output::errorPrototypeMismatch(yylineno, id->val, curFuncFormals);
+					output::errorPrototypeMismatch(id->lineNum, id->val, curFuncFormals);
 					exit(0);
 				}
 			}
@@ -460,18 +460,14 @@ call::call(Node *id, expList *expList) : Node("call") {
 			exit(0);
 		}
 		if (funcId.types.size() != expList->expVector.size() + 1) {
-			output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
+			output::errorPrototypeMismatch(id->lineNum, id->val, funcId.types);
 			exit(0);
 		}
 		for (int i = 1; i < funcId.types.size(); i++) {
 			if (funcId.types[i] != expList->expVector[i - 1].expType) {
-				if (id->val == "printi") {
-					if (expList->expVector[i - 1].expType != "BYTE") {
-						output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
-						exit(0);
-					}
+				if (expList->expVector[i - 1].expType == "BYTE" && funcId.types[i] == "INT") {
 				} else {
-					output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
+					output::errorPrototypeMismatch(id->lineNum, id->val, funcId.types);
 					exit(0);
 				}
 			}
@@ -481,13 +477,13 @@ call::call(Node *id, expList *expList) : Node("call") {
 }
 
 call::call(Node *id) : Node("call") {
-	if (id->val == curFuncName){
+	if (id->val == curFuncName) {
 		if (curFuncFormals.size() != 1) {
 			output::errorPrototypeMismatch(id->lineNum, id->val, curFuncFormals);
 			exit(0);
 		}
 		this->rettype = curFuncFormals[0];
-	}else{
+	} else {
 		symbolRow funcId = findSymbolRow(id->val);
 		if (id->val != funcId.name || !funcId.isFunc) {
 			output::errorUndefFunc(id->lineNum, id->val);
