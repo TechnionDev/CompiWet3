@@ -186,8 +186,6 @@ funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *sta
 	}
 	symbolRow symbol_row(id->val, 0, funcTypes, false, funcConstTypes, true);
 	globSymTable[0].SymbolTable.push_back(symbol_row);
-	globSymTable.back().SymbolTable.push_back(symbol_row);
-
 	end_scope();
 }
 

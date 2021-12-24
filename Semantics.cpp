@@ -195,7 +195,6 @@ funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *sta
 	cout << "===== we are in funcDecl. and this is the size of globSymTable: " + to_string(globSymTable.size()) + "======="<< endl;
 	symbolRow symbol_row(id->val, 0, funcTypes, false, funcConstTypes, true);
 	globSymTable[0].SymbolTable.push_back(symbol_row);
-	globSymTable.back().SymbolTable.push_back(symbol_row);
 
 	end_scope();
 }
