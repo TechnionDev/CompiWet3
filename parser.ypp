@@ -5,6 +5,8 @@
     using namespace std;
     int yylex();
     extern int yylineno;
+    extern std::string curFuncName;
+    extern char *yytext;
     void yyerror(const char* err);
 %}
 
@@ -48,7 +50,7 @@ program: m_glob funcs {$$ = new program();};
 funcs: /*epsilon*/{$$ = new funcs();};|
         funcDecl funcs {$$ = new funcs();};
 
-funcDecl: retType ID m_newScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = new funcDecl(
+funcDecl: retType ID m_funcNewScope LPAREN formals RPAREN LBRACE statements RBRACE{$$ = new funcDecl(
                                                                                     dynamic_cast<retType*>($1),
                                                                                     $2,
                                                                                     dynamic_cast<formals*>($5),
@@ -148,6 +150,8 @@ exp: LPAREN exp RPAREN{$$ = new exp(dynamic_cast<exp*>($2));};
 	|LPAREN typeAnnotation type RPAREN exp{$$ = new exp(dynamic_cast<typeAnnotation*>($2), dynamic_cast<type*>($3), dynamic_cast<exp*>($5),$1->lineNum);};
 
 m_glob: /*epsilon*/     {m_glob();};
+
+m_funcNewScope: /*epsilon*/ {curFuncName = yytext;m_newScope();};
 
 m_newScope: /*epsilon*/ {m_newScope();};
 

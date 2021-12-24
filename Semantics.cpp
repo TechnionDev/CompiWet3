@@ -6,6 +6,8 @@ vector<symbolTable> globSymTable = {};
 vector<int> offsetStack = {};
 bool mainExits = false;
 string curFuncRetVal = "";
+std::string curFuncName = "";
+vector<string> curFuncFormals;
 symbolRow::symbolRow(string name,
 					 int pos,
 					 vector<string> types,
@@ -151,6 +153,7 @@ program::program() : Node("program") {
 	cout << "this is program" << endl;
 	if (!mainExits) {
 		output::errorMainMissing();
+		exit(0);
 	}
 	end_scope();
 }
@@ -212,6 +215,9 @@ retType::retType(Node *typeName) : Node("retType") {
 formals::formals() : Node("formals") {
 	cout << "this is formals" << endl;
 	this->formalsVector = {};
+	for (auto it: this->formalsVector) {
+		curFuncFormals.push_back(it.formalType);
+	}
 }
 
 formals::formals(formalsList *formals) : Node("formals") {
@@ -238,6 +244,9 @@ formals::formals(formalsList *formals) : Node("formals") {
 		i--;
 	}
 	this->formalsVector = formals->formalsVector;
+	for (auto it: this->formalsVector) {
+		curFuncFormals.push_back(it.formalType);
+	}
 }
 
 formalsList::formalsList(formalsDecl *formalsDecl) : Node("formalsList") {
@@ -459,49 +468,71 @@ SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement")
 }//RETURN exp SC
 
 call::call(Node *id, expList *expList) : Node("call") {
-	cout << "this is call (Node *id, expList *expList)" << endl;
-	symbolRow funcId = findSymbolRow(id->val);
-	cout << "this is the func found name: " + funcId.name << endl;
-	cout << "this is the id->val: " + id->val << endl;
-	if (!funcId.isFunc) {
-		cout << "funcId.isFunc is false" << endl;
-	}
-	if (id->val != funcId.name || !funcId.isFunc) {
-		output::errorUndefFunc(id->lineNum, id->val);
-		exit(0);
-	}
-	if (funcId.types.size() != expList->expVector.size() + 1) {
-		output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
-		exit(0);
-	}
-	for (int i = 1; i < funcId.types.size(); i++) {
-		if (funcId.types[i] != expList->expVector[i - 1].expType) {
-			if (id->val == "printi") {
-				if (expList->expVector[i - 1].expType != "BYTE") {
+	if (id->val == curFuncName) {
+		if (curFuncFormals.size() != expList->expVector.size() + 1) {
+			output::errorPrototypeMismatch(yylineno, id->val, curFuncFormals);
+			exit(0);
+		}
+		for (int i = 1; i < curFuncFormals.size(); i++) {
+			if (curFuncFormals[i] != expList->expVector[i - 1].expType) {
+				if (id->val == "printi") {
+					if (expList->expVector[i - 1].expType != "BYTE") {
+						output::errorPrototypeMismatch(yylineno, id->val, curFuncFormals);
+						exit(0);
+					}
+				} else {
+					output::errorPrototypeMismatch(yylineno, id->val, curFuncFormals);
+					exit(0);
+				}
+			}
+		}
+		this->rettype = curFuncFormals[0];
+	} else {
+		symbolRow funcId = findSymbolRow(id->val);
+		if (id->val != funcId.name || !funcId.isFunc) {
+			output::errorUndefFunc(id->lineNum, id->val);
+			exit(0);
+		}
+		if (funcId.types.size() != expList->expVector.size() + 1) {
+			output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
+			exit(0);
+		}
+		for (int i = 1; i < funcId.types.size(); i++) {
+			if (funcId.types[i] != expList->expVector[i - 1].expType) {
+				if (id->val == "printi") {
+					if (expList->expVector[i - 1].expType != "BYTE") {
+						output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
+						exit(0);
+					}
+				} else {
 					output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
 					exit(0);
 				}
-			} else {
-				output::errorPrototypeMismatch(yylineno, id->val, funcId.types);
-				exit(0);
 			}
 		}
+		this->rettype = funcId.types[0];
 	}
-	this->rettype = funcId.types[0];
 }
 
 call::call(Node *id) : Node("call") {
-	cout << "this is call" << endl;
-	symbolRow funcId = findSymbolRow(id->val);
-	if (id->val != funcId.name || !funcId.isFunc) {
-		output::errorUndefFunc(id->lineNum, id->val);
-		exit(0);
+	if (id->val == curFuncName){
+		if (curFuncFormals.size() != 1) {
+			output::errorPrototypeMismatch(id->lineNum, id->val, curFuncFormals);
+			exit(0);
+		}
+		this->rettype = curFuncFormals[0];
+	}else{
+		symbolRow funcId = findSymbolRow(id->val);
+		if (id->val != funcId.name || !funcId.isFunc) {
+			output::errorUndefFunc(id->lineNum, id->val);
+			exit(0);
+		}
+		if (funcId.types.size() != 1) {
+			output::errorPrototypeMismatch(id->lineNum, id->val, funcId.types);
+			exit(0);
+		}
+		this->rettype = funcId.types[0];
 	}
-	if (funcId.types.size() != 1) {
-		output::errorPrototypeMismatch(id->lineNum, id->val, funcId.types);
-		exit(0);
-	}
-	this->rettype = funcId.types[0];
 }
 
 expList::expList(exp *exp1) : Node("expList") {
