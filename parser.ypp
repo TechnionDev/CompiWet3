@@ -78,7 +78,7 @@ OpenStatement: IF LPAREN m_newScope exp RPAREN statement{$$ = new OpenStatement(
                                                                                 dynamic_cast<exp*>($4),
                                                                                 dynamic_cast<statement*>($6),
                                                                                 $1->lineNum);}
-		|IF LPAREN m_newScope exp RPAREN ClosedStatement  ELSE m_endScope m_newScope OpenStatement{$$ = new OpenStatement("IF",
+		|IF LPAREN m_newScope exp RPAREN ClosedStatement m_endScope ELSE m_newScope OpenStatement{$$ = new OpenStatement("IF",
                                                                                                                         dynamic_cast<exp*>($4),
                                                                                                                         dynamic_cast<ClosedStatement*>($6),
                                                                                                                         "ELSE",
@@ -90,7 +90,7 @@ OpenStatement: IF LPAREN m_newScope exp RPAREN statement{$$ = new OpenStatement(
 		                                                                              $1->lineNum);};
 
 ClosedStatement:SimpleStatement {$$ = new ClosedStatement(dynamic_cast<SimpleStatement*>($1));}
-		|IF m_newScope LPAREN exp RPAREN ClosedStatement ELSE m_newScope ClosedStatement{$$ = new ClosedStatement("IF",
+		|IF LPAREN m_newScope exp RPAREN ClosedStatement m_endScope ELSE m_newScope ClosedStatement{$$ = new ClosedStatement("IF",
 		                                                                                                          dynamic_cast<exp*>($4),
 		                                                                                                          dynamic_cast<ClosedStatement*>($6),
 		                                                                                                          "ELSE",
