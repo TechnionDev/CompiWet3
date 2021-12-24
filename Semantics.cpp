@@ -5,6 +5,7 @@
 vector<symbolTable> globSymTable = {};
 vector<int> offsetStack = {};
 bool mainExits = false;
+string curFuncRetVal = "";
 symbolRow::symbolRow(string name,
 					 int pos,
 					 vector<string> types,
@@ -132,16 +133,7 @@ bool isIdentifierConst(string id) {
 	return res;
 }
 string getRetTypeFunc() {
-	string res = "";
-	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
-		for (auto itScope = itGlob->SymbolTable.rbegin(); itScope != itGlob->SymbolTable.rend(); itScope++) {
-			if (itScope->isFunc) {
-				res = itScope->types[0];
-				return res;
-			}
-		}
-	}
-	return res;
+	return curFuncRetVal;
 }
 
 bool isInWhile() {
@@ -160,13 +152,6 @@ program::program() : Node("program") {
 	if (!mainExits) {
 		output::errorMainMissing();
 	}
-	cout << "this is main" + globSymTable[0].SymbolTable[3].name << endl;
-	if (globSymTable[0].SymbolTable[3].isFunc){
-		cout << "main is func" << endl;
-	} else{
-		cout << "main is not func" << endl;
-	}
-	cout << "this is the size of the size of main: " + to_string(globSymTable[0].SymbolTable[3].types.size()) << endl;
 	end_scope();
 }
 
@@ -210,6 +195,7 @@ funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *sta
 retType::retType(type *type) : Node("retType") {
 	cout << "this is retType" << endl;
 	this->typeName = type->typeName;
+	curFuncRetVal = this->typeName;
 }
 
 retType::retType(Node *typeName) : Node("retType") {
@@ -220,6 +206,7 @@ retType::retType(Node *typeName) : Node("retType") {
 		exit(0);
 	}
 	this->typeName = "VOID";
+	curFuncRetVal = this->typeName;
 }
 
 formals::formals() : Node("formals") {
@@ -462,8 +449,9 @@ SimpleStatement::SimpleStatement(call *call) : Node("SimpleStatement") {
 }
 
 SimpleStatement::SimpleStatement(Node *node, exp *exp) : Node("SimpleStatement") {
-	cout << "this is SimpleStatement" << endl;
+	cout << "this is SimpleStatement (Node *node, exp *exp)" << endl;
 	string func = getRetTypeFunc();
+	cout << "this is the funcRet val in  RETURN exp SC: " + func << endl;
 	if (func == "" || func != exp->expType) {
 		output::errorMismatch(node->lineNum);
 		exit(0);
@@ -547,7 +535,7 @@ typeAnnotation::typeAnnotation(Node *annoType) : Node("typeAnnotation") {
 	cout << "this is typeAnnotation" << endl;
 	if (annoType->val == "") {
 		isConst = false;
-	} else if (annoType->val == "CONST") {
+	} else if (annoType->val == "const") {
 		isConst = true;
 	} else {
 		output::errorSyn(annoType->lineNum);

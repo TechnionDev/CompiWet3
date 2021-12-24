@@ -5,6 +5,8 @@
 vector<symbolTable> globSymTable = {};
 vector<int> offsetStack = {};
 bool mainExits = false;
+string curFuncRetVal = "";
+
 symbolRow::symbolRow(string name,
 					 int pos,
 					 vector<string> types,
@@ -127,16 +129,7 @@ bool isIdentifierConst(string id) {
 	return res;
 }
 string getRetTypeFunc() {
-	string res = "";
-	for (auto itGlob = globSymTable.rbegin(); itGlob != globSymTable.rend(); itGlob++) {
-		for (auto itScope = itGlob->SymbolTable.rbegin(); itScope != itGlob->SymbolTable.rend(); itScope++) {
-			if (itScope->isFunc) {
-				res = itScope->types[0];
-				return res;
-			}
-		}
-	}
-	return res;
+	return curFuncRetVal;
 }
 
 bool isInWhile() {
@@ -151,10 +144,10 @@ bool isInWhile() {
 //////////////////////////////////////////////////
 
 program::program() : Node("program") {
-	end_scope();
 	if (!mainExits) {
 		output::errorMainMissing();
 	}
+	end_scope();
 }
 
 funcs::funcs() : Node("funcs") {
@@ -191,6 +184,7 @@ funcDecl::funcDecl(retType *retType, Node *id, formals *formals, statements *sta
 
 retType::retType(type *type) : Node("retType") {
 	this->typeName = type->typeName;
+	curFuncRetVal = this->typeName;
 }
 
 retType::retType(Node *typeName) : Node("retType") {
@@ -199,6 +193,7 @@ retType::retType(Node *typeName) : Node("retType") {
 		exit(0);
 	}
 	this->typeName = "VOID";
+	curFuncRetVal = this->typeName;
 }
 
 formals::formals() : Node("formals") {
@@ -491,7 +486,7 @@ type::type(Node *typeName) : Node("type") {
 typeAnnotation::typeAnnotation(Node *annoType) : Node("typeAnnotation") {
 	if (annoType->val == "") {
 		isConst = false;
-	} else if (annoType->val == "CONST") {
+	} else if (annoType->val == "const") {
 		isConst = true;
 	} else {
 		output::errorSyn(annoType->lineNum);
