@@ -387,8 +387,12 @@ SimpleStatement::SimpleStatement(typeAnnotation *typeAnnotation, type *type, Nod
 		exit(0);
 	}
 	if (type->typeName != exp->expType) {
-		output::errorMismatch(id->lineNum);
-		exit(0);
+		if (type->typeName == "INT" && exp->expType == "BYTE"){
+
+		} else{
+			output::errorMismatch(id->lineNum);
+			exit(0);
+		}
 	}
 	int pos = offsetStack.back();
 	offsetStack.back() = pos + 1;
