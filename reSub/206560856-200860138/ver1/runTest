@@ -1,0 +1,16 @@
+#!/bin/bash
+numtests=26
+command="./hw3 < t\$i.in >& myOut\$i.out"
+
+i="17"
+while [ $i -le $numtests ]
+	do
+	eval $command
+	diff t$i.out myOut$i.out &> /dev/null
+	if [[ $? != 0 ]]
+		then
+		echo "Failed test #"$i"!"
+		exit
+	fi
+	i=$[$i+1]
+done
